@@ -14,13 +14,13 @@ $success = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_job'])) {
     $title = $_POST['title'];
     $description = $_POST['description'];
-    $budget = $_POST['budget'];
+    $price = $_POST['price'];
     $category = $_POST['category'];
-    $client_id = $_SESSION['user_id'];
+    $student_id = $_SESSION['user_id'];
 
-    $stmt = $pdo->prepare("INSERT INTO jobs (client_id, title, description, budget, category) VALUES (?, ?, ?, ?, ?)");
-    if ($stmt->execute([$client_id, $title, $description, $budget, $category])) {
-        $success = "Job posted successfully! <a href='jobs.php' style='color: inherit; text-decoration: underline;'>View Jobs</a>";
+    $stmt = $pdo->prepare("INSERT INTO gigs (student_id, title, description, price, category) VALUES (?, ?, ?, ?, ?)");
+    if ($stmt->execute([$student_id, $title, $description, $price, $category])) {
+        $success = "Gig posted successfully! <a href='jobs.php' style='color: inherit; text-decoration: underline;'>View Gigs</a>";
     } else {
         $error = "Failed to post job. Please try again.";
     }
@@ -32,13 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_job'])) {
     <p style="color: var(--text-muted); margin-bottom: 2rem;">Find the best student talent for your project.</p>
 
     <?php if($error): ?>
-        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
+        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.5); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #ff8a80;">
             <?php echo $error; ?>
         </div>
     <?php endif; ?>
 
     <?php if($success): ?>
-        <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #6ee7b7;">
+        <div style="background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0,230,118,0.35); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #00e676;">
             <?php echo $success; ?>
         </div>
     <?php endif; ?>

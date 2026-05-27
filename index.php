@@ -18,7 +18,7 @@
             <p style="color: var(--text-muted);">Web, Mobile, and Software apps.</p>
         </div>
         <div class="card">
-            <i class="fas fa-palette" style="font-size: 2rem; color: var(--secondary); margin-bottom: 1rem;"></i>
+            <i class="fas fa-palette" style="font-size: 2rem; color: var(--primary-hover); margin-bottom: 1rem;"></i>
             <h3>Design</h3>
             <p style="color: var(--text-muted);">UI/UX, Graphic design, and Branding.</p>
         </div>
@@ -28,7 +28,7 @@
             <p style="color: var(--text-muted);">Content, Copywriting, and Research.</p>
         </div>
         <div class="card">
-            <i class="fas fa-graduation-cap" style="font-size: 2rem; color: #10b981; margin-bottom: 1rem;"></i>
+            <i class="fas fa-graduation-cap" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
             <h3>Tutoring</h3>
             <p style="color: var(--text-muted);">Academic help and Skill sharing.</p>
         </div>
@@ -42,7 +42,7 @@
             <p>Active Students</p>
         </div>
         <div style="text-align: center;">
-            <h2 style="font-size: 3rem; color: var(--secondary);">1.2k+</h2>
+            <h2 style="font-size: 3rem; color: var(--primary-hover);">1.2k+</h2>
             <p>Jobs Completed</p>
         </div>
         <div style="text-align: center;">

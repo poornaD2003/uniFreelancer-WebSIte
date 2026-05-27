@@ -53,13 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <?php if($error): ?>
-        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
+        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.5); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #ff8a80;">
             <?php echo $error; ?>
         </div>
     <?php endif; ?>
 
     <?php if($success): ?>
-        <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #6ee7b7;">
+        <div style="background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0,230,118,0.35); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #00e676;">
             <?php echo $success; ?>
         </div>
     <?php endif; ?>

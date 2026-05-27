@@ -3,7 +3,7 @@ include 'includes/db.php';
 include 'includes/header.php';
 
 // Fetch jobs from database
-$stmt = $pdo->query("SELECT j.*, u.fullname as client_name FROM jobs j JOIN users u ON j.client_id = u.id WHERE j.status = 'open' ORDER BY j.created_at DESC");
+$stmt = $pdo->query("SELECT j.*, u.fullname as client_name FROM gigs j JOIN users u ON j.client_id = u.id WHERE j.status = 'approve' ORDER BY j.created_at DESC");
 $jobs = $stmt->fetchAll();
 ?>
 
@@ -13,8 +13,8 @@ $jobs = $stmt->fetchAll();
             <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Available Gigs</h1>
             <p style="color: var(--text-muted);">Browse the latest freelance opportunities for students.</p>
         </div>
-        <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'client'): ?>
-            <a href="post-job.php" class="btn btn-primary">Post a New Job</a>
+        <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'student'): ?>
+            <a href="post-gig.php" class="btn btn-primary">Post a New Gig</a>
         <?php endif; ?>
     </div>
 
@@ -26,7 +26,7 @@ $jobs = $stmt->fetchAll();
                     <h3><?php echo htmlspecialchars($job['title']); ?></h3>
                     <p style="color: var(--text-muted); margin-bottom: 1.5rem;"><?php echo htmlspecialchars(substr($job['description'], 0, 100)) . '...'; ?></p>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="budget">$<?php echo number_format($job['budget'], 2); ?></span>
+                        <span class="budget">$<?php echo number_format($job['price'], 2); ?></span>
                         <a href="job-details.php?id=<?php echo $job['id']; ?>" class="btn btn-outline">Apply Now</a>
                     </div>
                 </div>
@@ -34,7 +34,7 @@ $jobs = $stmt->fetchAll();
         <?php else: ?>
             <div style="grid-column: 1/-1; text-align: center; padding: 4rem; background: var(--glass-bg); border-radius: 24px;">
                 <i class="fas fa-search" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                <h2>No jobs found</h2>
+                <h2>No gigs found</h2>
                 <p style="color: var(--text-muted);">Check back later for new opportunities!</p>
             </div>
         <?php endif; ?>
