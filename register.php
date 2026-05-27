@@ -298,20 +298,64 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
         <div class="input-group">
             <label for="university_name">University Name</label>
-            <input type="text" name="university_name" id="university_name" required
-                   placeholder="e.g. University of Colombo">
+            <select name="university_name" id="university_name" required>
+                <option value="">Select University</option>
+                <option value="University of Colombo">University of Colombo</option>
+                <option value="University of Kelaniya">University of Kelaniya</option>
+                <option value="University of Peradeniya">University of Peradeniya</option>
+                <option value="University of Sri Jayewardenepura">University of Sri Jayewardenepura</option>
+                <option value="University of Moratuwa">University of Moratuwa</option>
+                <option value="University of Ruhuna">University of Ruhuna</option>
+                <option value="University of Jaffna">University of Jaffna</option>
+                <option value="Eastern University, Sri Lanka">Eastern University, Sri Lanka</option>
+                <option value="Wayamba University of Sri Lanka">Wayamba University of Sri Lanka</option>
+                <option value="Sabaragamuwa University of Sri Lanka">Sabaragamuwa University of Sri Lanka</option>
+                <option value="Uva Wellassa University">Uva Wellassa University</option>
+                <option value="South Eastern University of Sri Lanka">South Eastern University of Sri Lanka</option>
+                <option value="University of Visual and Performing Arts">University of Visual and Performing Arts</option>
+                <option value="NSBM Green University Town">NSBM Green University Town</option>
+                <option value="SLIIT (Sri Lanka Institute of Information Technology)">SLIIT (Sri Lanka Institute of Information Technology)</option>
+                <option value="Kotelawala Defence University">Kotelawala Defence University</option>
+                
+            </select>
         </div>
 
         <div class="input-group">
             <label for="faculty">Faculty</label>
-            <input type="text" name="faculty" id="faculty" required
-                   placeholder="e.g. Faculty of Science">
+            
+                   <select name = "faculty" id = "faculty" required placeholder = "Faculty of Science">
+                    <option> Faculty of Science</option>
+                    <option> Faculty of Humanities and Social Sciences</option>
+                    <option> Faculty of Computing</option>
+                    <option> Faculty of Allied Health Sciences</option>
+                    <option> Faculty of Agriculture</option>
+                    <option> Faculty of Management and Finance</option>
+                    <option> Faculty of Engineering</option>
+                    <option> Faculty of Law</option>
+                    <option> Faculty of Medicine</option>
+                    <option> Faculty of Dental Sciences</option>
+                    <option> Faculty of Ayurvedic Medicine</option>
+                    <option> Faculty of Indigenous Medicine</option>
+                    <option> Faculty of Postgraduate Studies</option>
+                    <option> Faculty of Graduate Studies</option>
+                    <option> Faculty of Education</option>
+                    <option> Faculty of Technology</option>
+                    <option> Faculty of Health Sciences</option>
+                    <option> Faculty of Arts</option>
+                    </select>
+                  
         </div>
 
         <div class="input-group">
-            <label for="department">Department</label>
-            <input type="text" name="department" id="department" required
-                   placeholder="e.g. Department of Computer Science">
+            <label for = "department">Department</label>
+            <select name = "department" id = "department" required placeholder = "Department of Computer Science">
+                <option> Department of Computer Science</option>
+                <option> Department of Information Technology</option>
+                <option> Department of Mathematics</option>
+                <option> Department of Physics</option>
+                <option> Department of Chemistry</option>
+                <option> Department of Biology</option>
+            </select>
         </div>
 
         <!-- Club affiliations section (optional) -->
