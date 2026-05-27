@@ -7,22 +7,21 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('student', 'client') NOT NULL,
-    bio TEXT,
-    skills TEXT,
     profile_pic VARCHAR(255) DEFAULT 'default.png',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS jobs (
+CREATE TABLE IF NOT EXISTS gigs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    client_id INT NOT NULL,
+    student_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
+    image VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    budget DECIMAL(10, 2) NOT NULL,
-    category VARCHAR(50) NOT NULL,
-    status ENUM('open', 'in_progress', 'completed', 'closed') DEFAULT 'open',
+    price DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(255) NOT NULL,
+    status ENUM('approve', 'pending') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS student_profiles (
@@ -36,13 +35,40 @@ CREATE TABLE IF NOT EXISTS student_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS applications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    job_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS client_profiles (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    user_id           INT NOT NULL UNIQUE,
+    business_name VARCHAR(200) NOT NULL,
+    business_address VARCHAR(255),
+    business_type VARCHAR(100) NOT NULL,
+    business_phone VARCHAR(20) NOT NULL,
+    business_website VARCHAR(255),
+    business_image VARCHAR(255) NOT NULL DEFAULT 'default.png',
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS orders(
+    orderId int AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
     student_id INT NOT NULL,
-    proposal TEXT NOT NULL,
-    status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
+    gig_id INT NOT NULL,
+    status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (gig_id) REFERENCES gigs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS payment(
+    paymentId INT AUTO_INCREMENT PRIMARY KEY,
+    orderId INT NOT NULL,
+    client_id INT NOT NULL,
+    student_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_status ENUM('pending', 'completed') DEFAULT 'pending',
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (orderId) REFERENCES orders(orderId) ON DELETE CASCADE
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
