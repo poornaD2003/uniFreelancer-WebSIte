@@ -5,7 +5,7 @@
     <p>The exclusive freelance marketplace for university students. Hire skilled developers, designers, and writers from top campuses.</p>
     <div class="hero-btns">
         <a href="jobs.php" class="btn btn-primary">Browse Jobs</a>
-        <a href="auth.php" class="btn btn-outline">Start Freelancing</a>
+        <a href="login.php" class="btn btn-outline">Start Freelancing</a>
     </div>
 </section>
 

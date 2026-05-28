@@ -5,7 +5,7 @@ include 'includes/header.php';
 $error   = "";
 $success = "";
 
-// ─── STEP 2: Student university details ──────────────────────────────────────
+// ─── STEP 2 (STUDENT): Save academic info ──────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_details'])) {
     $user_id          = (int) $_POST['user_id'];
     $university_name  = trim($_POST['university_name']);
@@ -15,8 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
 
     if (empty($university_name) || empty($faculty) || empty($department)) {
         $error = "Please fill in all required university fields.";
-        // Re-show step 2
-        $show_step2 = true;
+        $show_student_step2 = true;
         $step2_user_id = $user_id;
     } else {
         $stmt = $pdo->prepare(
@@ -29,16 +28,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
                club_affiliations = VALUES(club_affiliations)"
         );
         if ($stmt->execute([$user_id, $university_name, $faculty, $department, $club_affiliations])) {
-            $success = "Registration complete! <a href='login.php' style='color: inherit; text-decoration: underline;'>Login here</a>.";
+            $success = "Registration complete! Your profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
         } else {
             $error = "Something went wrong saving your university details. Please try again.";
-            $show_step2 = true;
+            $show_student_step2 = true;
             $step2_user_id = $user_id;
         }
     }
 }
 
-// ─── STEP 1: Basic account creation ──────────────────────────────────────────
+// ─── STEP 2 (CLIENT): Save business info ───────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_details'])) {
+    $user_id          = (int) $_POST['user_id'];
+    $business_name    = trim($_POST['business_name']);
+    $business_type    = trim($_POST['business_type']);
+    $business_phone   = trim($_POST['business_phone']);
+    $business_address = trim($_POST['business_address'] ?? '');
+
+    if (empty($business_name) || empty($business_type) || empty($business_phone)) {
+        $error = "Please fill in all required business fields.";
+        $show_client_step2 = true;
+        $step2_user_id = $user_id;
+    } else {
+        $stmt = $pdo->prepare(
+            "INSERT INTO client_profiles (user_id, business_name, business_type, business_phone, business_address)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               business_name    = VALUES(business_name),
+               business_type    = VALUES(business_type),
+               business_phone   = VALUES(business_phone),
+               business_address = VALUES(business_address)"
+        );
+        if ($stmt->execute([$user_id, $business_name, $business_type, $business_phone, $business_address])) {
+            $success = "Registration complete! Your business profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+        } else {
+            $error = "Something went wrong saving your business details. Please try again.";
+            $show_client_step2 = true;
+            $step2_user_id = $user_id;
+        }
+    }
+}
+
+// ─── STEP 1: Core Account Insertion ──────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     $fullname = trim($_POST['fullname']);
     $email    = trim($_POST['email']);
@@ -51,15 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     if ($stmt->rowCount() > 0) {
         $error = "Email already exists!";
     } else {
-        $stmt = $pdo->prepare("INSERT INTO users (fullname, email, password, role) VALUES (?, ?, ?, ?)");
+        // Explicitly sets user status to 'pending' upon creation
+        $stmt = $pdo->prepare("INSERT INTO users (fullname, email, password, role, status) VALUES (?, ?, ?, ?, 'pending')");
         if ($stmt->execute([$fullname, $email, $password, $role])) {
             $new_user_id = $pdo->lastInsertId();
+            $step2_user_id = $new_user_id;
+
             if ($role === 'student') {
-                // Proceed to step 2
-                $show_step2    = true;
-                $step2_user_id = $new_user_id;
+                $show_student_step2 = true;
             } else {
-                $success = "Registration successful! <a href='login.php' style='color: inherit; text-decoration: underline;'>Login here</a>.";
+                $show_client_step2 = true;
             }
         } else {
             $error = "Something went wrong. Please try again.";
@@ -190,23 +222,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
 <div class="form-container card fade-in">
 
-    <?php if (!isset($show_step2)): ?>
-    <!-- ════════════════ STEP 1: Basic Info ════════════════ -->
-    <div class="step-progress">
-        <div class="step-wrapper">
-            <div class="step-bubble active">1</div>
-            <div class="step-label">Account</div>
-        </div>
-        <div class="step-line"></div>
-        <div class="step-wrapper">
-            <div class="step-bubble">2</div>
-            <div class="step-label">University</div>
-        </div>
-    </div>
-
-    <h2 style="margin-bottom: 0.5rem; font-size: 1.9rem;">Create Account</h2>
-    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Join the UniLance community today.</p>
-
     <?php if ($error): ?>
         <div style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
             <?php echo $error; ?>
@@ -219,7 +234,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
         </div>
     <?php endif; ?>
 
-    <?php if (!$success): ?>
+    <?php if (!$success && !isset($show_student_step2) && !isset($show_client_step2)): ?>
+    <div class="step-progress">
+        <div class="step-wrapper">
+            <div class="step-bubble active">1</div>
+            <div class="step-label">Account</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-wrapper">
+            <div class="step-bubble">2</div>
+            <div class="step-label">Details</div>
+        </div>
+    </div>
+
+    <h2 style="margin-bottom: 0.5rem; font-size: 1.9rem;">Create Account</h2>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Join the UniLance community today.</p>
+
     <form method="POST" action="register.php" id="step1-form">
         <div class="input-group">
             <label>Full Name</label>
@@ -261,14 +291,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
             Continue &rarr;
         </button>
     </form>
-    <?php endif; ?>
-
+    
     <p style="margin-top: 2rem; text-align: center; color: var(--text-muted);">
         Already have an account? <a href="login.php" style="color: var(--primary);">Login</a>
     </p>
+    <?php endif; ?>
 
-    <?php else: ?>
-    <!-- ════════════════ STEP 2: University Details (Students only) ════════════════ -->
+
+    <?php if (isset($show_student_step2)): ?>
     <div class="step-progress">
         <div class="step-wrapper">
             <div class="step-bubble done">✓</div>
@@ -284,43 +314,77 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     <h2 style="margin-bottom: 0.5rem; font-size: 1.9rem;">University Details</h2>
     <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Tell us about your academic background.</p>
 
-    <?php if ($error): ?>
-        <div style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
-            <?php echo $error; ?>
-        </div>
-    <?php endif; ?>
-
-    <form method="POST" action="register.php" id="step2-form">
+    <form method="POST" action="register.php" id="step2-student-form">
         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($step2_user_id); ?>">
 
-        <!-- University Info section -->
         <div class="section-divider">🏫 Academic Information</div>
 
         <div class="input-group">
             <label for="university_name">University Name</label>
-            <input type="text" name="university_name" id="university_name" required
-                   placeholder="e.g. University of Colombo">
+            <select name="university_name" id="university_name" required>
+                <option value="">Select University</option>
+                <option value="University of Colombo">University of Colombo</option>
+                <option value="University of Kelaniya">University of Kelaniya</option>
+                <option value="University of Peradeniya">University of Peradeniya</option>
+                <option value="University of Sri Jayewardenepura">University of Sri Jayewardenepura</option>
+                <option value="University of Moratuwa">University of Moratuwa</option>
+                <option value="University of Ruhuna">University of Ruhuna</option>
+                <option value="University of Jaffna">University of Jaffna</option>
+                <option value="Eastern University, Sri Lanka">Eastern University, Sri Lanka</option>
+                <option value="Wayamba University of Sri Lanka">Wayamba University of Sri Lanka</option>
+                <option value="Sabaragamuwa University of Sri Lanka">Sabaragamuwa University of Sri Lanka</option>
+                <option value="Uva Wellassa University">Uva Wellassa University</option>
+                <option value="South Eastern University of Sri Lanka">South Eastern University of Sri Lanka</option>
+                <option value="University of Visual and Performing Arts">University of Visual and Performing Arts</option>
+                <option value="NSBM Green University Town">NSBM Green University Town</option>
+                <option value="SLIIT (Sri Lanka Institute of Information Technology)">SLIIT (Sri Lanka Institute of Information Technology)</option>
+                <option value="Kotelawala Defence University">Kotelawala Defence University</option>
+            </select>
         </div>
 
         <div class="input-group">
             <label for="faculty">Faculty</label>
-            <input type="text" name="faculty" id="faculty" required
-                   placeholder="e.g. Faculty of Science">
+            <select name="faculty" id="faculty" required>
+                <option value="">Select Faculty</option>
+                <option value="Faculty of Science">Faculty of Science</option>
+                <option value="Faculty of Humanities and Social Sciences">Faculty of Humanities and Social Sciences</option>
+                <option value="Faculty of Computing">Faculty of Computing</option>
+                <option value="Faculty of Allied Health Sciences">Faculty of Allied Health Sciences</option>
+                <option value="Faculty of Agriculture">Faculty of Agriculture</option>
+                <option value="Faculty of Management and Finance">Faculty of Management and Finance</option>
+                <option value="Faculty of Engineering">Faculty of Engineering</option>
+                <option value="Faculty of Law">Faculty of Law</option>
+                <option value="Faculty of Medicine">Faculty of Medicine</option>
+                <option value="Faculty of Dental Sciences">Faculty of Dental Sciences</option>
+                <option value="Faculty of Ayurvedic Medicine">Faculty of Ayurvedic Medicine</option>
+                <option value="Faculty of Indigenous Medicine">Faculty of Indigenous Medicine</option>
+                <option value="Faculty of Postgraduate Studies">Faculty of Postgraduate Studies</option>
+                <option value="Faculty of Graduate Studies">Faculty of Graduate Studies</option>
+                <option value="Faculty of Education">Faculty of Education</option>
+                <option value="Faculty of Technology">Faculty of Technology</option>
+                <option value="Faculty of Health Sciences">Faculty of Health Sciences</option>
+                <option value="Faculty of Arts">Faculty of Arts</option>
+            </select>
         </div>
 
         <div class="input-group">
             <label for="department">Department</label>
-            <input type="text" name="department" id="department" required
-                   placeholder="e.g. Department of Computer Science">
+            <select name="department" id="department" required>
+                <option value="">Select Department</option>
+                <option value="Department of Computer Science">Department of Computer Science</option>
+                <option value="Department of Information Technology">Department of Information Technology</option>
+                <option value="Department of Mathematics">Department of Mathematics</option>
+                <option value="Department of Physics">Department of Physics</option>
+                <option value="Department of Chemistry">Department of Chemistry</option>
+                <option value="Department of Biology">Department of Biology</option>
+            </select>
         </div>
 
-        <!-- Club affiliations section (optional) -->
         <div class="section-divider">🎭 Club Affiliations <span class="label-optional">Optional</span></div>
 
         <div class="input-group">
             <label for="club_affiliations">
-                Club / Society Memberships
-                <span class="label-optional">Optional</span>
+                Club / Society Memberships <span class="label-optional">Optional</span>
             </label>
             <input type="text" name="club_affiliations" id="club_affiliations"
                    placeholder="e.g. Rotaract Club, IEEE Student Branch, Drama Society">
@@ -329,10 +393,64 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
             </small>
         </div>
 
-        <button type="submit" name="register_student_details" id="btn-finish"
+        <button type="submit" name="register_student_details" id="btn-finish-student"
                 class="btn btn-primary"
                 style="width: 100%; justify-content: center; margin-top: 1.5rem;">
-            ✓ Complete Registration
+            ✓ Submit For Approval
+        </button>
+    </form>
+
+    <p style="margin-top: 2rem; text-align: center; color: var(--text-muted);">
+        Already have an account? <a href="login.php" style="color: var(--primary);">Login</a>
+    </p>
+    <?php endif; ?>
+
+
+    <?php if (isset($show_client_step2)): ?>
+    <div class="step-progress">
+        <div class="step-wrapper">
+            <div class="step-bubble done">✓</div>
+            <div class="step-label">Account</div>
+        </div>
+        <div class="step-line" style="opacity:0.7;"></div>
+        <div class="step-wrapper">
+            <div class="step-bubble active">2</div>
+            <div class="step-label">Business</div>
+        </div>
+    </div>
+
+    <h2 style="margin-bottom: 0.5rem; font-size: 1.9rem;">Business Details</h2>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Tell us about your organization or enterprise.</p>
+
+    <form method="POST" action="register.php" id="step2-client-form">
+        <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($step2_user_id); ?>">
+
+        <div class="section-divider">💼 Company Information</div>
+
+        <div class="input-group">
+            <label for="business_name">Business / Enterprise Name</label>
+            <input type="text" name="business_name" id="business_name" required placeholder="e.g. TechCorp Solutions">
+        </div>
+
+        <div class="input-group">
+            <label for="business_type">Industry Type</label>
+            <input type="text" name="business_type" id="business_type" required placeholder="e.g. Software, E-Commerce, Retail">
+        </div>
+
+        <div class="input-group">
+            <label for="business_phone">Contact Phone Number</label>
+            <input type="text" name="business_phone" id="business_phone" required placeholder="e.g. +94771234567">
+        </div>
+
+        <div class="input-group">
+            <label for="business_address">Office Address <span class="label-optional">Optional</span></label>
+            <input type="text" name="business_address" id="business_address" placeholder="e.g. Galle Road, Colombo 03">
+        </div>
+
+        <button type="submit" name="register_client_details" id="btn-finish-client"
+                class="btn btn-primary"
+                style="width: 100%; justify-content: center; margin-top: 1.5rem;">
+            ✓ Submit For Approval
         </button>
     </form>
 
@@ -344,7 +462,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 </div>
 
 <script>
-// Dynamically update the button label based on role selection
+// Dynamically update the button label based on role selection on Step 1
 (function () {
     const radios = document.querySelectorAll('input[name="role"]');
     const btn    = document.getElementById('btn-next');
@@ -353,7 +471,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     radios.forEach(r => r.addEventListener('change', function () {
         btn.innerHTML = this.value === 'student'
             ? 'Continue &rarr;'
-            : 'Create Account';
+            : 'Continue &rarr;'; 
     }));
 })();
 </script>
