@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     fullname VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'client') NOT NULL,
+    role ENUM('student', 'client', 'admin') NOT NULL,
+    status ENUM('active', 'inactive', 'pending') DEFAULT 'pending',
     profile_pic VARCHAR(255) DEFAULT 'default.png',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS payment(
     amount DECIMAL(10, 2) NOT NULL,
     payment_status ENUM('pending', 'completed') DEFAULT 'pending',
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (orderId) REFERENCES orders(orderId) ON DELETE CASCADE
+    FOREIGN KEY (orderId) REFERENCES orders(orderId) ON DELETE CASCADE,
     FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
