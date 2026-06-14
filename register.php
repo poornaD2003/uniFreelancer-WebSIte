@@ -347,36 +347,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
             <select name="faculty" id="faculty" required>
                 <option value="">Select Faculty</option>
                 <option value="Faculty of Science">Faculty of Science</option>
-                <option value="Faculty of Humanities and Social Sciences">Faculty of Humanities and Social Sciences</option>
                 <option value="Faculty of Computing">Faculty of Computing</option>
-                <option value="Faculty of Allied Health Sciences">Faculty of Allied Health Sciences</option>
-                <option value="Faculty of Agriculture">Faculty of Agriculture</option>
                 <option value="Faculty of Management and Finance">Faculty of Management and Finance</option>
                 <option value="Faculty of Engineering">Faculty of Engineering</option>
-                <option value="Faculty of Law">Faculty of Law</option>
-                <option value="Faculty of Medicine">Faculty of Medicine</option>
-                <option value="Faculty of Dental Sciences">Faculty of Dental Sciences</option>
-                <option value="Faculty of Ayurvedic Medicine">Faculty of Ayurvedic Medicine</option>
-                <option value="Faculty of Indigenous Medicine">Faculty of Indigenous Medicine</option>
-                <option value="Faculty of Postgraduate Studies">Faculty of Postgraduate Studies</option>
-                <option value="Faculty of Graduate Studies">Faculty of Graduate Studies</option>
-                <option value="Faculty of Education">Faculty of Education</option>
-                <option value="Faculty of Technology">Faculty of Technology</option>
-                <option value="Faculty of Health Sciences">Faculty of Health Sciences</option>
                 <option value="Faculty of Arts">Faculty of Arts</option>
             </select>
         </div>
 
         <div class="input-group">
             <label for="department">Department</label>
+
+            
             <select name="department" id="department" required>
                 <option value="">Select Department</option>
-                <option value="Department of Computer Science">Department of Computer Science</option>
-                <option value="Department of Information Technology">Department of Information Technology</option>
-                <option value="Department of Mathematics">Department of Mathematics</option>
-                <option value="Department of Physics">Department of Physics</option>
-                <option value="Department of Chemistry">Department of Chemistry</option>
-                <option value="Department of Biology">Department of Biology</option>
+                
             </select>
         </div>
 
@@ -472,6 +456,81 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
         btn.innerHTML = this.value === 'student'
             ? 'Continue &rarr;'
             : 'Continue &rarr;'; 
+    }));
+})();
+
+const departmentsByFaculty = {
+    "Faculty of Science": [
+        "Department of Chemistry",
+        "Department of Physics",
+        "Department of Mathematics",
+        "Department of Plant Sciences",
+        "Department of Zoology",
+        "Department of Statistics",
+        
+    ],
+    "Faculty of Arts": [
+        "Department of Economics",
+        "Department of English",
+        "Department of Pali and Buddhist Studies",
+        "Department of Philosophy",
+        "Department of Political Science",
+        "Department of Socialogy",
+        "Department of Geography",
+        "Department of Archaeology"
+    ],
+    "Faculty of Computing": [
+        "Department of Computer Science",
+        "Department of Information Technology",
+        "Department of Information Systems Engineering"
+    ],
+    "Faculty of Engineering": [
+        "Department of Computer Science & Engineering",
+        "Department of Electronic & Telecommunication Engineering",
+        "Department of Civil Engineering",
+        "Department of Mechanical Engineering"
+    ],
+    "Faculty of Management and Finance": [
+        "Department of Accounting",
+        "Department of Business Administration",
+        "Department of Finance",
+        "Department of Marketing Management"
+    ]
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+    const facultySelect = document.getElementById("faculty");
+    const departmentSelect = document.getElementById("department");
+
+    if (facultySelect && departmentSelect) {
+        facultySelect.addEventListener("change", function () {
+            const selectedFaculty = this.value;
+
+            departmentSelect.innerHTML = '<option value="">Select Department</option>';
+
+            if (selectedFaculty && departmentsByFaculty[selectedFaculty]) {
+                
+                departmentsByFaculty[selectedFaculty].forEach(function (dept) {
+                    const option = document.createElement("option");
+                    option.value = dept;
+                    option.textContent = dept;
+                    departmentSelect.appendChild(option);
+                });
+                
+            } else if (!selectedFaculty) {
+                departmentSelect.innerHTML = '<option value="">Select Faculty First</option>';
+            }
+        });
+    }
+});
+
+(function () {
+    const radios = document.querySelectorAll('input[name="role"]');
+    const btn    = document.getElementById('btn-next');
+    if (!btn) return;
+
+    radios.forEach(r => r.addEventListener('change', function () {
+        btn.innerHTML = this.value === 'student' ? 'Continue &rarr;' : 'Continue &rarr;'; 
     }));
 })();
 </script>
