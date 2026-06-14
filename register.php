@@ -1,5 +1,10 @@
 <?php
-include 'includes/db.php';
+// Session එකක් start කර නොමැති නම් start කිරීම
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+include 'includes/db.php';       // මෙතන දැන් තියෙන්නේ $conn සහිත mysqli connection එකයි
 include 'includes/header.php';
 
 $error   = "";
@@ -7,7 +12,7 @@ $success = "";
 
 // ─── STEP 2 (STUDENT): Save academic info ──────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_details'])) {
-    $user_id          = (int) $_POST['user_id'];
+    $user_id           = (int) $_POST['user_id'];
     $university_name  = trim($_POST['university_name']);
     $faculty          = trim($_POST['faculty']);
     $department       = trim($_POST['department']);
@@ -18,21 +23,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
         $show_student_step2 = true;
         $step2_user_id = $user_id;
     } else {
-        $stmt = $pdo->prepare(
-            "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations)
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               university_name   = VALUES(university_name),
-               faculty           = VALUES(faculty),
-               department        = VALUES(department),
-               club_affiliations = VALUES(club_affiliations)"
-        );
-        if ($stmt->execute([$user_id, $university_name, $faculty, $department, $club_affiliations])) {
-            $success = "Registration complete! Your profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
-        } else {
-            $error = "Something went wrong saving your university details. Please try again.";
-            $show_student_step2 = true;
-            $step2_user_id = $user_id;
+        // MySQLi ON DUPLICATE KEY UPDATE සඳහා ප්‍රශ්නාර්ථ ලකුණු (?) මඟින් values බින්ඩ් කිරීම
+        $query = "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    university_name   = ?,
+                    faculty           = ?,
+                    department        = ?,
+                    club_affiliations = ?";
+                    
+        if ($stmt = mysqli_prepare($conn, $query)) {
+            // මෙතන දත්ත 9 ක් තියෙනවා (i = integer, s = string) -> issssssss
+            mysqli_stmt_bind_param($stmt, "issssssss", 
+                $user_id, $university_name, $faculty, $department, $club_affiliations, // Insert values
+                $university_name, $faculty, $department, $club_affiliations          // Update values
+            );
+            
+            if (mysqli_stmt_execute($stmt)) {
+                $success = "Registration complete! Your profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+            } else {
+                $error = "Something went wrong saving your university details. Please try again.";
+                $show_student_step2 = true;
+                $step2_user_id = $user_id;
+            }
+            mysqli_stmt_close($stmt);
         }
     }
 }
@@ -50,21 +64,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
         $show_client_step2 = true;
         $step2_user_id = $user_id;
     } else {
-        $stmt = $pdo->prepare(
-            "INSERT INTO client_profiles (user_id, business_name, business_type, business_phone, business_address)
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               business_name    = VALUES(business_name),
-               business_type    = VALUES(business_type),
-               business_phone   = VALUES(business_phone),
-               business_address = VALUES(business_address)"
-        );
-        if ($stmt->execute([$user_id, $business_name, $business_type, $business_phone, $business_address])) {
-            $success = "Registration complete! Your business profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
-        } else {
-            $error = "Something went wrong saving your business details. Please try again.";
-            $show_client_step2 = true;
-            $step2_user_id = $user_id;
+        $query = "INSERT INTO client_profiles (user_id, business_name, business_type, business_phone, business_address)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    business_name    = ?,
+                    business_type    = ?,
+                    business_phone   = ?,
+                    business_address = ?";
+                    
+        if ($stmt = mysqli_prepare($conn, $query)) {
+            // මෙතනත් දත්ත 9 ක් ඇත -> issssssss
+            mysqli_stmt_bind_param($stmt, "issssssss", 
+                $user_id, $business_name, $business_type, $business_phone, $business_address,
+                $business_name, $business_type, $business_phone, $business_address
+            );
+            
+            if (mysqli_stmt_execute($stmt)) {
+                $success = "Registration complete! Your business profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+            } else {
+                $error = "Something went wrong saving your business details. Please try again.";
+                $show_client_step2 = true;
+                $step2_user_id = $user_id;
+            }
+            mysqli_stmt_close($stmt);
         }
     }
 }
@@ -76,25 +98,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     $role     = $_POST['role'];
 
-    // Check if email exists
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    if ($stmt->rowCount() > 0) {
-        $error = "Email already exists!";
-    } else {
-        // Explicitly sets user status to 'pending' upon creation
-        $stmt = $pdo->prepare("INSERT INTO users (fullname, email, password, role, status) VALUES (?, ?, ?, ?, 'pending')");
-        if ($stmt->execute([$fullname, $email, $password, $role])) {
-            $new_user_id = $pdo->lastInsertId();
-            $step2_user_id = $new_user_id;
-
-            if ($role === 'student') {
-                $show_student_step2 = true;
-            } else {
-                $show_client_step2 = true;
-            }
+    // Email එක කලින් පාවිච්චි කරලා තියෙනවද බැලීම
+    $check_query = "SELECT id FROM users WHERE email = ?";
+    if ($check_stmt = mysqli_prepare($conn, $check_query)) {
+        mysqli_stmt_bind_param($check_stmt, "s", $email);
+        mysqli_stmt_execute($check_stmt);
+        mysqli_stmt_store_result($check_stmt); // row count එක ගන්න මේක ඕනේ
+        
+        if (mysqli_stmt_num_rows($check_stmt) > 0) {
+            $error = "Email already exists!";
+            mysqli_stmt_close($check_stmt);
         } else {
-            $error = "Something went wrong. Please try again.";
+            mysqli_stmt_close($check_stmt);
+            
+            // අලුත් user කෙනෙක් ඇතුලත් කිරීම
+            $insert_query = "INSERT INTO users (fullname, email, password, role, status) VALUES (?, ?, ?, ?, 'pending')";
+            if ($insert_stmt = mysqli_prepare($conn, $insert_query)) {
+                mysqli_stmt_bind_param($insert_stmt, "ssss", $fullname, $email, $password, $role);
+                
+                if (mysqli_stmt_execute($insert_stmt)) {
+                    // PDO lastInsertId() වෙනුවට mysqli_insert_id භාවිතා කිරීම
+                    $new_user_id = mysqli_insert_id($conn);
+                    $step2_user_id = $new_user_id;
+
+                    if ($role === 'student') {
+                        $show_student_step2 = true;
+                    } else {
+                        $show_client_step2 = true;
+                    }
+                } else {
+                    $error = "Something went wrong. Please try again.";
+                }
+                mysqli_stmt_close($insert_stmt);
+            }
         }
     }
 }
@@ -224,13 +260,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
     <?php if ($error): ?>
         <div style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
-            <?php echo $error; ?>
+            <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
 
     <?php if ($success): ?>
         <div style="background: rgba(16,185,129,0.2); border: 1px solid #10b981; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #6ee7b7;">
-            <?php echo $success; ?>
+            <?php echo htmlspecialchars($success); ?>
         </div>
     <?php endif; ?>
 
@@ -253,11 +289,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     <form method="POST" action="register.php" id="step1-form">
         <div class="input-group">
             <label>Full Name</label>
-            <input type="text" name="fullname" required placeholder="John Doe" id="fullname">
+            <input type="text" name="fullname" required placeholder="John Doe" id="fullname" value="<?php echo isset($fullname) ? htmlspecialchars($fullname) : ''; ?>">
         </div>
         <div class="input-group">
             <label>Email Address</label>
-            <input type="email" name="email" required placeholder="name@university.edu" id="email">
+            <input type="email" name="email" required placeholder="name@university.edu" id="email" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>">
         </div>
         <div class="input-group">
             <label>Password</label>
@@ -356,11 +392,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
         <div class="input-group">
             <label for="department">Department</label>
-
-            
             <select name="department" id="department" required>
                 <option value="">Select Department</option>
-                
             </select>
         </div>
 
@@ -453,9 +486,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     if (!btn) return;
 
     radios.forEach(r => r.addEventListener('change', function () {
-        btn.innerHTML = this.value === 'student'
-            ? 'Continue &rarr;'
-            : 'Continue &rarr;'; 
+        btn.innerHTML = this.value === 'student' ? 'Continue &rarr;' : 'Continue &rarr;'; 
     }));
 })();
 
@@ -466,8 +497,7 @@ const departmentsByFaculty = {
         "Department of Mathematics",
         "Department of Plant Sciences",
         "Department of Zoology",
-        "Department of Statistics",
-        
+        "Department of Statistics"
     ],
     "Faculty of Arts": [
         "Department of Economics",
@@ -509,30 +539,18 @@ document.addEventListener("DOMContentLoaded", function () {
             departmentSelect.innerHTML = '<option value="">Select Department</option>';
 
             if (selectedFaculty && departmentsByFaculty[selectedFaculty]) {
-                
                 departmentsByFaculty[selectedFaculty].forEach(function (dept) {
                     const option = document.createElement("option");
                     option.value = dept;
                     option.textContent = dept;
                     departmentSelect.appendChild(option);
                 });
-                
             } else if (!selectedFaculty) {
                 departmentSelect.innerHTML = '<option value="">Select Faculty First</option>';
             }
         });
     }
 });
-
-(function () {
-    const radios = document.querySelectorAll('input[name="role"]');
-    const btn    = document.getElementById('btn-next');
-    if (!btn) return;
-
-    radios.forEach(r => r.addEventListener('change', function () {
-        btn.innerHTML = this.value === 'student' ? 'Continue &rarr;' : 'Continue &rarr;'; 
-    }));
-})();
 </script>
 
 <?php include 'includes/footer.php'; ?>

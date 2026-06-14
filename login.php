@@ -1,36 +1,70 @@
 <?php
-include 'includes/db.php';
+// Session එකක් දැනටමත් start කරලා නැත්නම් විතරක් start කරන්න
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+include 'includes/db.php'; // මෙතන දැන් තියෙන්නේ $conn සහිත mysqli_connect එකයි
 include 'includes/header.php';
 
 $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
-    $email = $_POST['email'];
+    // 1. User input පිරිසිදු කර ගැනීම
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-
-    if ($user && password_verify($password, $user['password'])) {
-        if ($user['role'] === 'admin') {
-            header("Location: admin_approve.php");
-            exit();
-        }
-        if ($user['status'] === 'pending') {
-            $error = "🔒 Your account is pending administrator approval. Please wait until evaluation completes.";
-        } elseif ($user['status'] === 'inactive') {
-            $error = "🚫 Your account has been suspended by an administrator.";
+    // 2. MySQLi Prepared Statement එකක් සකස් කිරීම
+    $query = "SELECT id, fullname, password, role, status FROM users WHERE email = ?";
+    
+    if ($stmt = mysqli_prepare($conn, $query)) {
+        // Parameter එක bind කිරීම ("s" යනු string එකක් බැවින්)
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        
+        // Execute කිරීම
+        mysqli_stmt_execute($stmt);
+        
+        // Result එක ලබා ගැනීම
+        $result = mysqli_stmt_get_result($stmt);
+        
+        // User කෙනෙක් හමු වුනාදැයි බැලීම (Fetch row)
+        if ($user = mysqli_fetch_assoc($result)) {
+            
+            // 3. Password එක Verify කිරීම
+            if (password_verify($password, $user['password'])) {
+                
+                // Admin කෙනෙක් නම් කෙලින්ම යවනවා
+                if ($user['role'] === 'admin') {
+                    header("Location: admin_approve.php");
+                    exit();
+                }
+                
+                // Account Status එක පරීක්ෂා කිරීම
+                if ($user['status'] === 'pending') {
+                    $error = "🔒 Your account is pending administrator approval. Please wait until evaluation completes.";
+                } elseif ($user['status'] === 'inactive') {
+                    $error = "🚫 Your account has been suspended by an administrator.";
+                } else {
+                    // Authorized state ('active') -> Session වලට දත්ත දැමීම
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['fullname'] = $user['fullname'];
+                    $_SESSION['role'] = $user['role'];
+                    
+                    header("Location: index.php");
+                    exit();
+                }
+                
+            } else {
+                $error = "Invalid email or password.";
+            }
         } else {
-            // Authorized state ('active')
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['fullname'] = $user['fullname'];
-            $_SESSION['role'] = $user['role'];
-            header("Location: index.php");
-            exit();
+            $error = "Invalid email or password.";
         }
+        
+        // Statement එක close කිරීම
+        mysqli_stmt_close($stmt);
     } else {
-        $error = "Invalid email or password.";
+        $error = "Something went wrong. Please try again later.";
     }
 }
 ?>
@@ -41,14 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
 
     <?php if($error): ?>
         <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
-            <?php echo $error; ?>
+            <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
 
     <form method="POST" action="login.php">
         <div class="input-group">
             <label>Email Address</label>
-            <input type="email" name="email" required placeholder="name@university.edu">
+            <input type="email" name="email" required placeholder="name@university.edu" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>">
         </div>
         <div class="input-group">
             <label>Password</label>
