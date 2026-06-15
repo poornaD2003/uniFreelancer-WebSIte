@@ -24,6 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         if ($user = mysqli_fetch_assoc($result)) {
             
             if (password_verify($password, $user['password'])) {
+
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['fullname'] = $user['fullname'];
+                $_SESSION['role'] = $user['role'];
                 
                 if ($user['role'] === 'admin') {
                     header("Location: admin_approve.php");
@@ -32,13 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 
                 if ($user['status'] === 'pending') {
                     $error = "🔒 Your account is pending administrator approval. Please wait until evaluation completes.";
+                    session_destroy();
                 } elseif ($user['status'] === 'inactive') {
                     $error = "🚫 Your account has been suspended by an administrator.";
+                    session_destroy();
                 } else {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['fullname'] = $user['fullname'];
-                    $_SESSION['role'] = $user['role'];
-                    
                     header("Location: index.php");
                     exit();
                 }
