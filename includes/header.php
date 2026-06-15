@@ -13,19 +13,12 @@ include 'db.php';
     <link rel="stylesheet" href="css/style.css?v=2.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Quick styling for the profile avatar */
         .nav-profile {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-        .avatar-img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #2ecc71;
-        }
+      
     </style>
 </head>
 <body>
@@ -34,23 +27,24 @@ include 'db.php';
         <ul class="nav-links">
             <li><a href="index.php">Home</a></li>
             <li><a href="jobs.php">Browse Jobs</a></li>
-            <li><a href="freelancers.php">Students</a></li>
-            <?php if(isset($_SESSION['user_id'])): ?>
-                <li><a href="post-job.php">Post a Job</a></li>
+            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+                <li><a href="client-dashboard.php">Dashboard</a></li>
+            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
+                 <li><a href="post-job.php">Post a Job</a></li>
                 <li><a href="dashboard.php">Dashboard</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
-            echo $_SESSION['user_id'];
-            echo $_SESSION['role'];
+          //  echo $_SESSION['user_id'];
+            //echo $_SESSION['role'];
                 // Determine the correct profile page based on user role
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
                 $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
             ?>
                 <div class="nav-profile">
-                    <a href="<?php echo $profile_page; ?>">
-                       profile
+                    <a href="<?php echo $profile_page; ?>" class="btn btn-outline">
+                       Profile
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
