@@ -1,14 +1,11 @@
 <?php
-// 1. Session start කිරීම
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 2. MySQLi connection එක ($conn) ඇති db.php එක ඇතුළත් කිරීම
 include 'includes/db.php'; 
 include 'includes/header.php';
 
-// 3. Session ආරක්ෂාව පරීක්ෂාව
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
     header("Location: login.php");
     exit();
@@ -18,10 +15,8 @@ $user_id = $_SESSION['user_id'];
 $msg = "";
 $error_msg = ""; 
 
-// 4. Form Submissions හැසිරවීම (MySQLi Prepared Statements)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Academic & Personal Details Update කිරීම
     if (isset($_POST['update_profile'])) {
         $fullname = trim($_POST['fullname']);
         $uni_name = $_POST['university_name'] ?? '';
@@ -29,13 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dept = $_POST['department'] ?? '';
         $clubs = trim($_POST['club_affiliations']);
 
-        // users table එක update කිරීම
         $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
         $stmt1->bind_param("si", $fullname, $user_id);
         $stmt1->execute();
         $stmt1->close();
 
-        // student_profiles table එකට Upsert කිරීම
         $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations) 
                                 VALUES (?, ?, ?, ?, ?) 
                                 ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_affiliations = ?");
@@ -46,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = "Profile updated successfully!";
     }
 
-    // මුරපදය (Password) වෙනස් කිරීම
     if (isset($_POST['change_password'])) {
         $current_password = $_POST['current_password'];
         $new_password = $_POST['new_password'];
@@ -70,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Skill එකක් එකතු කිරීම
     if (isset($_POST['add_skill'])) {
         $skill = trim($_POST['skill_name']);
         if (!empty($skill)) {
@@ -82,7 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Skill එකක් ඉවත් කිරීම
     if (isset($_POST['delete_skill'])) {
         $skill_id = intval($_POST['skill_id']);
         $stmt = $conn->prepare("DELETE FROM student_skills WHERE id = ? AND user_id = ?");
@@ -93,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 5. දැනට පවතින records Fetch කිරීම
 $stmtUser = $conn->prepare("SELECT * FROM users WHERE id = ?");
 $stmtUser->bind_param("i", $user_id);
 $stmtUser->execute();

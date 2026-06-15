@@ -1,16 +1,14 @@
 <?php
-// Session එකක් start කර නොමැති නම් start කිරීම
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-include 'includes/db.php';       // මෙතන දැන් තියෙන්නේ $conn සහිත mysqli connection එකයි
+include 'includes/db.php';       
 include 'includes/header.php';
 
 $error   = "";
 $success = "";
 
-// ─── STEP 2 (STUDENT): Save academic info ──────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_details'])) {
     $user_id           = (int) $_POST['user_id'];
     $university_name  = trim($_POST['university_name']);
@@ -23,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
         $show_student_step2 = true;
         $step2_user_id = $user_id;
     } else {
-        // MySQLi ON DUPLICATE KEY UPDATE සඳහා ප්‍රශ්නාර්ථ ලකුණු (?) මඟින් values බින්ඩ් කිරීම
         $query = "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations)
                   VALUES (?, ?, ?, ?, ?)
                   ON DUPLICATE KEY UPDATE
@@ -33,10 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
                     club_affiliations = ?";
                     
         if ($stmt = mysqli_prepare($conn, $query)) {
-            // මෙතන දත්ත 9 ක් තියෙනවා (i = integer, s = string) -> issssssss
             mysqli_stmt_bind_param($stmt, "issssssss", 
-                $user_id, $university_name, $faculty, $department, $club_affiliations, // Insert values
-                $university_name, $faculty, $department, $club_affiliations          // Update values
+                $user_id, $university_name, $faculty, $department, $club_affiliations, 
+                $university_name, $faculty, $department, $club_affiliations     
             );
             
             if (mysqli_stmt_execute($stmt)) {
@@ -51,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
     }
 }
 
-// ─── STEP 2 (CLIENT): Save business info ───────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_details'])) {
     $user_id          = (int) $_POST['user_id'];
     $business_name    = trim($_POST['business_name']);
@@ -73,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
                     business_address = ?";
                     
         if ($stmt = mysqli_prepare($conn, $query)) {
-            // මෙතනත් දත්ත 9 ක් ඇත -> issssssss
             mysqli_stmt_bind_param($stmt, "issssssss", 
                 $user_id, $business_name, $business_type, $business_phone, $business_address,
                 $business_name, $business_type, $business_phone, $business_address
@@ -91,19 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
     }
 }
 
-// ─── STEP 1: Core Account Insertion ──────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     $fullname = trim($_POST['fullname']);
     $email    = trim($_POST['email']);
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     $role     = $_POST['role'];
 
-    // Email එක කලින් පාවිච්චි කරලා තියෙනවද බැලීම
     $check_query = "SELECT id FROM users WHERE email = ?";
     if ($check_stmt = mysqli_prepare($conn, $check_query)) {
         mysqli_stmt_bind_param($check_stmt, "s", $email);
         mysqli_stmt_execute($check_stmt);
-        mysqli_stmt_store_result($check_stmt); // row count එක ගන්න මේක ඕනේ
+        mysqli_stmt_store_result($check_stmt); 
         
         if (mysqli_stmt_num_rows($check_stmt) > 0) {
             $error = "Email already exists!";
@@ -111,13 +103,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
         } else {
             mysqli_stmt_close($check_stmt);
             
-            // අලුත් user කෙනෙක් ඇතුලත් කිරීම
             $insert_query = "INSERT INTO users (fullname, email, password, role, status) VALUES (?, ?, ?, ?, 'pending')";
             if ($insert_stmt = mysqli_prepare($conn, $insert_query)) {
                 mysqli_stmt_bind_param($insert_stmt, "ssss", $fullname, $email, $password, $role);
                 
                 if (mysqli_stmt_execute($insert_stmt)) {
-                    // PDO lastInsertId() වෙනුවට mysqli_insert_id භාවිතා කිරීම
                     $new_user_id = mysqli_insert_id($conn);
                     $step2_user_id = $new_user_id;
 
@@ -137,7 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 ?>
 
 <style>
-/* ── Step progress bar ───────────────────────────────────────────────────── */
 .step-progress {
     display: flex;
     align-items: center;
@@ -190,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     align-items: center;
 }
 
-/* ── Section heading inside form ─────────────────────────────────────────── */
 .section-divider {
     display: flex;
     align-items: center;
@@ -209,7 +197,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     background: rgba(255,255,255,0.1);
 }
 
-/* ── Optional badge ──────────────────────────────────────────────────────── */
 .label-optional {
     font-size: 0.7rem;
     background: rgba(124,58,237,0.2);
@@ -221,7 +208,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     font-weight: 500;
 }
 
-/* ── Role selector cards ─────────────────────────────────────────────────── */
 .role-cards {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -397,7 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
             </select>
         </div>
 
-        <div class="section-divider">🎭 Club Affiliations <span class="label-optional">Optional</span></div>
+        <div class="section-divider"> Club Affiliations <span class="label-optional">Optional</span></div>
 
         <div class="input-group">
             <label for="club_affiliations">

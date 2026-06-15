@@ -1,14 +1,11 @@
 <?php
-// 1. Session start කිරීම
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 2. Database & Header ඇතුළත් කිරීම
-include 'includes/db.php';       // MySQLi connection ($conn)
+include 'includes/db.php';       
 include 'includes/header.php';
 
-// 3. Session ආරක්ෂාව පරීක්ෂාව (Role එක client ද බලනවා)
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'client') {
     header("Location: login.php");
     exit();
@@ -18,10 +15,8 @@ $user_id = $_SESSION['user_id'];
 $msg = "";
 $error_msg = ""; 
 
-// 4. Form Submissions හැසිරවීම (MySQLi Prepared Statements)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Business Profile Info Update කිරීම
     if (isset($_POST['update_client'])) {
         $fullname = trim($_POST['fullname']);
         $b_name = trim($_POST['business_name']);
@@ -30,13 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $b_phone = trim($_POST['business_phone']);
         $b_website = trim($_POST['business_website']);
 
-        // 1. users table එක update කිරීම
         $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
         $stmt1->bind_param("si", $fullname, $user_id);
         $stmt1->execute();
         $stmt1->close();
         
-        // 2. client_profiles table එකට Upsert කිරීම
         $stmt2 = $conn->prepare("INSERT INTO client_profiles (user_id, business_name, business_address, business_type, business_phone, business_website) 
                                 VALUES (?, ?, ?, ?, ?, ?) 
                                 ON DUPLICATE KEY UPDATE business_name = ?, business_address = ?, business_type = ?, business_phone = ?, business_website = ?");
@@ -48,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = "Business profile updated successfully!";
     }
 
-    // Password වෙනස් කිරීම
     if (isset($_POST['change_password'])) {
         $current_password = $_POST['current_password'];
         $new_password = $_POST['new_password'];
@@ -73,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 5. දැනට පවතින දත්ත Fetch කිරීම (Inputs පිරවීමට)
 $stmtUser = $conn->prepare("SELECT * FROM users WHERE id = ?");
 $stmtUser->bind_param("i", $user_id);
 $stmtUser->execute();
