@@ -1,5 +1,8 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+include 'db.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,8 +11,22 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniLance | University Freelancing Platform</title>
     <link rel="stylesheet" href="css/style.css?v=2.0">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Quick styling for the profile avatar */
+        .nav-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .avatar-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #2ecc71;
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -24,8 +41,19 @@ session_start();
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
-            <?php if(isset($_SESSION['user_id'])): ?>
-                <a href="logout.php" class="btn btn-outline">Logout</a>
+            <?php if(isset($_SESSION['user_id'])): 
+            echo $_SESSION['user_id'];
+            echo $_SESSION['role'];
+                // Determine the correct profile page based on user role
+                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
+                $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
+            ?>
+                <div class="nav-profile">
+                    <a href="<?php echo $profile_page; ?>">
+                       profile
+                    </a>
+                    <a href="logout.php" class="btn btn-outline">Logout</a>
+                </div>
             <?php else: ?>
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
