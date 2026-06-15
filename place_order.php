@@ -1,37 +1,40 @@
 <?php
+// Include the database configuration module
 include 'db.php';
 session_start();
 
-// Validating the logged-in user session
+// Mock authentication checking: Set default Client ID if session is empty
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['user_id'] = 1;
 }
 $client_id = $_SESSION['user_id'];
 
+// Check if a specific student gig selection has been requested
 if (isset($_GET['gig_id'])) {
     $gig_id = intval($_GET['gig_id']);
 
-    // Find which student developer owns the selected gig service
+    // Database Lookup: Identify which student developer created this specific gig
     $gig_query = $conn->query("SELECT student_id FROM gigs WHERE id = '$gig_id'");
 
     if ($gig_query && $gig_query->num_rows > 0) {
         $gig = $gig_query->fetch_assoc();
         $student_id = $gig['student_id'];
 
-        // Insert a new structural tracking record row into the orders table
+        // CORE WORKFLOW: Place a new order inside the tracking management table
+        // Notice: This handles order instantiation only, not financial payment processing.
         $insert_order = "INSERT INTO orders (client_id, student_id, gig_id, status) VALUES ('$client_id', '$student_id', '$gig_id', 'pending')";
 
         if ($conn->query($insert_order)) {
-            // Redirect smoothly straight back into your dashboard view
+            // Success: Securely forward the client directly back to their main dashboard view
             header("Location: client_dashboard.php");
             exit();
         } else {
-            echo "Database error handling entry: " . $conn->error;
+            echo "System Database Error: " . $conn->error;
         }
     } else {
-        echo "Selected student gig reference not found.";
+        echo "Error: The requested student gig record could not be found in our directory.";
     }
 } else {
-    echo "No project gig was selected for purchase.";
+    echo "Error: No specific service gig was selected for ordering.";
 }
 ?>
