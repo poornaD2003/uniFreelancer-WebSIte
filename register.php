@@ -1,13 +1,16 @@
 <?php
-include 'includes/db.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+include 'includes/db.php';       
 include 'includes/header.php';
 
 $error   = "";
 $success = "";
 
-// ─── STEP 2 (STUDENT): Save academic info ──────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_details'])) {
-    $user_id          = (int) $_POST['user_id'];
+    $user_id           = (int) $_POST['user_id'];
     $university_name  = trim($_POST['university_name']);
     $faculty          = trim($_POST['faculty']);
     $department       = trim($_POST['department']);
@@ -18,26 +21,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
         $show_student_step2 = true;
         $step2_user_id = $user_id;
     } else {
-        $stmt = $pdo->prepare(
-            "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations)
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               university_name   = VALUES(university_name),
-               faculty           = VALUES(faculty),
-               department        = VALUES(department),
-               club_affiliations = VALUES(club_affiliations)"
-        );
-        if ($stmt->execute([$user_id, $university_name, $faculty, $department, $club_affiliations])) {
-            $success = "Registration complete! Your profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
-        } else {
-            $error = "Something went wrong saving your university details. Please try again.";
-            $show_student_step2 = true;
-            $step2_user_id = $user_id;
+        $query = "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    university_name   = ?,
+                    faculty           = ?,
+                    department        = ?,
+                    club_affiliations = ?";
+                    
+        if ($stmt = mysqli_prepare($conn, $query)) {
+            mysqli_stmt_bind_param($stmt, "issssssss", 
+                $user_id, $university_name, $faculty, $department, $club_affiliations, 
+                $university_name, $faculty, $department, $club_affiliations     
+            );
+            
+            if (mysqli_stmt_execute($stmt)) {
+                $success = "Registration complete! Your profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+            } else {
+                $error = "Something went wrong saving your university details. Please try again.";
+                $show_student_step2 = true;
+                $step2_user_id = $user_id;
+            }
+            mysqli_stmt_close($stmt);
         }
     }
 }
 
-// ─── STEP 2 (CLIENT): Save business info ───────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_details'])) {
     $user_id          = (int) $_POST['user_id'];
     $business_name    = trim($_POST['business_name']);
@@ -50,58 +59,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
         $show_client_step2 = true;
         $step2_user_id = $user_id;
     } else {
-        $stmt = $pdo->prepare(
-            "INSERT INTO client_profiles (user_id, business_name, business_type, business_phone, business_address)
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               business_name    = VALUES(business_name),
-               business_type    = VALUES(business_type),
-               business_phone   = VALUES(business_phone),
-               business_address = VALUES(business_address)"
-        );
-        if ($stmt->execute([$user_id, $business_name, $business_type, $business_phone, $business_address])) {
-            $success = "Registration complete! Your business profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
-        } else {
-            $error = "Something went wrong saving your business details. Please try again.";
-            $show_client_step2 = true;
-            $step2_user_id = $user_id;
+        $query = "INSERT INTO client_profiles (user_id, business_name, business_type, business_phone, business_address)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    business_name    = ?,
+                    business_type    = ?,
+                    business_phone   = ?,
+                    business_address = ?";
+                    
+        if ($stmt = mysqli_prepare($conn, $query)) {
+            mysqli_stmt_bind_param($stmt, "issssssss", 
+                $user_id, $business_name, $business_type, $business_phone, $business_address,
+                $business_name, $business_type, $business_phone, $business_address
+            );
+            
+            if (mysqli_stmt_execute($stmt)) {
+                $success = "Registration complete! Your business profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+            } else {
+                $error = "Something went wrong saving your business details. Please try again.";
+                $show_client_step2 = true;
+                $step2_user_id = $user_id;
+            }
+            mysqli_stmt_close($stmt);
         }
     }
 }
 
-// ─── STEP 1: Core Account Insertion ──────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     $fullname = trim($_POST['fullname']);
     $email    = trim($_POST['email']);
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     $role     = $_POST['role'];
 
-    // Check if email exists
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    if ($stmt->rowCount() > 0) {
-        $error = "Email already exists!";
-    } else {
-        // Explicitly sets user status to 'pending' upon creation
-        $stmt = $pdo->prepare("INSERT INTO users (fullname, email, password, role, status) VALUES (?, ?, ?, ?, 'pending')");
-        if ($stmt->execute([$fullname, $email, $password, $role])) {
-            $new_user_id = $pdo->lastInsertId();
-            $step2_user_id = $new_user_id;
-
-            if ($role === 'student') {
-                $show_student_step2 = true;
-            } else {
-                $show_client_step2 = true;
-            }
+    $check_query = "SELECT id FROM users WHERE email = ?";
+    if ($check_stmt = mysqli_prepare($conn, $check_query)) {
+        mysqli_stmt_bind_param($check_stmt, "s", $email);
+        mysqli_stmt_execute($check_stmt);
+        mysqli_stmt_store_result($check_stmt); 
+        
+        if (mysqli_stmt_num_rows($check_stmt) > 0) {
+            $error = "Email already exists!";
+            mysqli_stmt_close($check_stmt);
         } else {
-            $error = "Something went wrong. Please try again.";
+            mysqli_stmt_close($check_stmt);
+            
+            $insert_query = "INSERT INTO users (fullname, email, password, role, status) VALUES (?, ?, ?, ?, 'pending')";
+            if ($insert_stmt = mysqli_prepare($conn, $insert_query)) {
+                mysqli_stmt_bind_param($insert_stmt, "ssss", $fullname, $email, $password, $role);
+                
+                if (mysqli_stmt_execute($insert_stmt)) {
+                    $new_user_id = mysqli_insert_id($conn);
+                    $step2_user_id = $new_user_id;
+
+                    if ($role === 'student') {
+                        $show_student_step2 = true;
+                    } else {
+                        $show_client_step2 = true;
+                    }
+                } else {
+                    $error = "Something went wrong. Please try again.";
+                }
+                mysqli_stmt_close($insert_stmt);
+            }
         }
     }
 }
 ?>
 
 <style>
-/* ── Step progress bar ───────────────────────────────────────────────────── */
 .step-progress {
     display: flex;
     align-items: center;
@@ -154,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     align-items: center;
 }
 
-/* ── Section heading inside form ─────────────────────────────────────────── */
 .section-divider {
     display: flex;
     align-items: center;
@@ -173,7 +197,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     background: rgba(255,255,255,0.1);
 }
 
-/* ── Optional badge ──────────────────────────────────────────────────────── */
 .label-optional {
     font-size: 0.7rem;
     background: rgba(124,58,237,0.2);
@@ -185,7 +208,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     font-weight: 500;
 }
 
-/* ── Role selector cards ─────────────────────────────────────────────────── */
 .role-cards {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -224,13 +246,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
     <?php if ($error): ?>
         <div style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
-            <?php echo $error; ?>
+            <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
 
     <?php if ($success): ?>
         <div style="background: rgba(16,185,129,0.2); border: 1px solid #10b981; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #6ee7b7;">
-            <?php echo $success; ?>
+            <?php echo htmlspecialchars($success); ?>
         </div>
     <?php endif; ?>
 
@@ -253,11 +275,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     <form method="POST" action="register.php" id="step1-form">
         <div class="input-group">
             <label>Full Name</label>
-            <input type="text" name="fullname" required placeholder="John Doe" id="fullname">
+            <input type="text" name="fullname" required placeholder="John Doe" id="fullname" value="<?php echo isset($fullname) ? htmlspecialchars($fullname) : ''; ?>">
         </div>
         <div class="input-group">
             <label>Email Address</label>
-            <input type="email" name="email" required placeholder="name@university.edu" id="email">
+            <input type="email" name="email" required placeholder="name@university.edu" id="email" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>">
         </div>
         <div class="input-group">
             <label>Password</label>
@@ -347,22 +369,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
             <select name="faculty" id="faculty" required>
                 <option value="">Select Faculty</option>
                 <option value="Faculty of Science">Faculty of Science</option>
-                <option value="Faculty of Humanities and Social Sciences">Faculty of Humanities and Social Sciences</option>
                 <option value="Faculty of Computing">Faculty of Computing</option>
-                <option value="Faculty of Allied Health Sciences">Faculty of Allied Health Sciences</option>
-                <option value="Faculty of Agriculture">Faculty of Agriculture</option>
                 <option value="Faculty of Management and Finance">Faculty of Management and Finance</option>
                 <option value="Faculty of Engineering">Faculty of Engineering</option>
-                <option value="Faculty of Law">Faculty of Law</option>
-                <option value="Faculty of Medicine">Faculty of Medicine</option>
-                <option value="Faculty of Dental Sciences">Faculty of Dental Sciences</option>
-                <option value="Faculty of Ayurvedic Medicine">Faculty of Ayurvedic Medicine</option>
-                <option value="Faculty of Indigenous Medicine">Faculty of Indigenous Medicine</option>
-                <option value="Faculty of Postgraduate Studies">Faculty of Postgraduate Studies</option>
-                <option value="Faculty of Graduate Studies">Faculty of Graduate Studies</option>
-                <option value="Faculty of Education">Faculty of Education</option>
-                <option value="Faculty of Technology">Faculty of Technology</option>
-                <option value="Faculty of Health Sciences">Faculty of Health Sciences</option>
                 <option value="Faculty of Arts">Faculty of Arts</option>
             </select>
         </div>
@@ -371,16 +380,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
             <label for="department">Department</label>
             <select name="department" id="department" required>
                 <option value="">Select Department</option>
-                <option value="Department of Computer Science">Department of Computer Science</option>
-                <option value="Department of Information Technology">Department of Information Technology</option>
-                <option value="Department of Mathematics">Department of Mathematics</option>
-                <option value="Department of Physics">Department of Physics</option>
-                <option value="Department of Chemistry">Department of Chemistry</option>
-                <option value="Department of Biology">Department of Biology</option>
             </select>
         </div>
 
-        <div class="section-divider">🎭 Club Affiliations <span class="label-optional">Optional</span></div>
+        <div class="section-divider"> Club Affiliations <span class="label-optional">Optional</span></div>
 
         <div class="input-group">
             <label for="club_affiliations">
@@ -469,11 +472,71 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     if (!btn) return;
 
     radios.forEach(r => r.addEventListener('change', function () {
-        btn.innerHTML = this.value === 'student'
-            ? 'Continue &rarr;'
-            : 'Continue &rarr;'; 
+        btn.innerHTML = this.value === 'student' ? 'Continue &rarr;' : 'Continue &rarr;'; 
     }));
 })();
+
+const departmentsByFaculty = {
+    "Faculty of Science": [
+        "Department of Chemistry",
+        "Department of Physics",
+        "Department of Mathematics",
+        "Department of Plant Sciences",
+        "Department of Zoology",
+        "Department of Statistics"
+    ],
+    "Faculty of Arts": [
+        "Department of Economics",
+        "Department of English",
+        "Department of Pali and Buddhist Studies",
+        "Department of Philosophy",
+        "Department of Political Science",
+        "Department of Socialogy",
+        "Department of Geography",
+        "Department of Archaeology"
+    ],
+    "Faculty of Computing": [
+        "Department of Computer Science",
+        "Department of Information Technology",
+        "Department of Information Systems Engineering"
+    ],
+    "Faculty of Engineering": [
+        "Department of Computer Science & Engineering",
+        "Department of Electronic & Telecommunication Engineering",
+        "Department of Civil Engineering",
+        "Department of Mechanical Engineering"
+    ],
+    "Faculty of Management and Finance": [
+        "Department of Accounting",
+        "Department of Business Administration",
+        "Department of Finance",
+        "Department of Marketing Management"
+    ]
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+    const facultySelect = document.getElementById("faculty");
+    const departmentSelect = document.getElementById("department");
+
+    if (facultySelect && departmentSelect) {
+        facultySelect.addEventListener("change", function () {
+            const selectedFaculty = this.value;
+
+            departmentSelect.innerHTML = '<option value="">Select Department</option>';
+
+            if (selectedFaculty && departmentsByFaculty[selectedFaculty]) {
+                departmentsByFaculty[selectedFaculty].forEach(function (dept) {
+                    const option = document.createElement("option");
+                    option.value = dept;
+                    option.textContent = dept;
+                    departmentSelect.appendChild(option);
+                });
+            } else if (!selectedFaculty) {
+                departmentSelect.innerHTML = '<option value="">Select Faculty First</option>';
+            }
+        });
+    }
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>

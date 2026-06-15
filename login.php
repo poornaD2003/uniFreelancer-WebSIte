@@ -1,36 +1,58 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 include 'includes/db.php';
 include 'includes/header.php';
 
 $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
-    $email = $_POST['email'];
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-
-    if ($user && password_verify($password, $user['password'])) {
-        if ($user['role'] === 'admin') {
-            header("Location: admin_approve.php");
-            exit();
-        }
-        if ($user['status'] === 'pending') {
-            $error = "🔒 Your account is pending administrator approval. Please wait until evaluation completes.";
-        } elseif ($user['status'] === 'inactive') {
-            $error = "🚫 Your account has been suspended by an administrator.";
+    $query = "SELECT id, fullname, password, role, status FROM users WHERE email = ?";
+    
+    if ($stmt = mysqli_prepare($conn, $query)) {
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        
+        mysqli_stmt_execute($stmt);
+        
+        $result = mysqli_stmt_get_result($stmt);
+        
+        if ($user = mysqli_fetch_assoc($result)) {
+            
+            if (password_verify($password, $user['password'])) {
+                
+                if ($user['role'] === 'admin') {
+                    header("Location: admin_approve.php");
+                    exit();
+                }
+                
+                if ($user['status'] === 'pending') {
+                    $error = "🔒 Your account is pending administrator approval. Please wait until evaluation completes.";
+                } elseif ($user['status'] === 'inactive') {
+                    $error = "🚫 Your account has been suspended by an administrator.";
+                } else {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['fullname'] = $user['fullname'];
+                    $_SESSION['role'] = $user['role'];
+                    
+                    header("Location: index.php");
+                    exit();
+                }
+                
+            } else {
+                $error = "Invalid email or password.";
+            }
         } else {
-            // Authorized state ('active')
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['fullname'] = $user['fullname'];
-            $_SESSION['role'] = $user['role'];
-            header("Location: index.php");
-            exit();
+            $error = "Invalid email or password.";
         }
+        
+        mysqli_stmt_close($stmt);
     } else {
-        $error = "Invalid email or password.";
+        $error = "Something went wrong. Please try again later.";
     }
 }
 ?>
@@ -41,14 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
 
     <?php if($error): ?>
         <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
-            <?php echo $error; ?>
+            <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
 
     <form method="POST" action="login.php">
         <div class="input-group">
             <label>Email Address</label>
-            <input type="email" name="email" required placeholder="name@university.edu">
+            <input type="email" name="email" required placeholder="name@university.edu" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>">
         </div>
         <div class="input-group">
             <label>Password</label>
