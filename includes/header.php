@@ -30,13 +30,13 @@ include 'db.php';
             <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                 <li><a href="post-job.php">Post a Job</a></li>
-                <li><a href="dashboard.php">Dashboard</a></li>
+                 <li><a href="student-post-job.php">Post a Gig</a></li>
+                <li><a href="student-dashboard.php">Dashboard</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
-                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
+                $profile_page = ($_SESSION['role'] === 'student') ? 'student-profile.php' : 'clientProfile.php';
                 $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
             ?>
                 <div class="nav-profile">
