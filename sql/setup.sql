@@ -80,3 +80,16 @@ CREATE TABLE IF NOT EXISTS student_skills (
     skill_name VARCHAR(100) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS order_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    message TEXT NOT NULL,
+    file_path VARCHAR(255) NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_by_client TINYINT(1) DEFAULT 0,
+    deleted_by_student TINYINT(1) DEFAULT 0,
+    FOREIGN KEY (order_id) REFERENCES orders(orderId) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);

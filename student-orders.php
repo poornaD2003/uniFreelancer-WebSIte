@@ -40,6 +40,7 @@ $s=$conn->prepare("SELECT o.orderId,o.status,o.created_at,g.title AS gig_title,g
 if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r=$res->fetch_assoc())$orders[]=$r;$s->close();}
 ?>
 <link rel="stylesheet" href="css/student.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <div class="wrap">
     <aside class="sidebar"><h2>Student Hub</h2><nav>
         <a href="student-dashboard.php"><i class="fas fa-chart-line"></i> Dashboard</a>
@@ -68,7 +69,7 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                             </div>
                             <span class="badge badge-<?php echo str_replace('_','-',$o['status']); ?>"><?php echo ucfirst(str_replace('_',' ',$o['status'])); ?></span>
                         </div>
-                        <div class="order-desc" style="font-size:.85rem;color:var(--text-muted);"><strong>Received On:</strong> <?php echo date('M d, Y, h:i A',strtotime($o['created_at'])); ?></div>
+                        <div class="order-desc" style="font-size:.85rem;color:var(--text-muted); margin-bottom: 0.5rem;"><strong>Received On:</strong> <?php echo date('M d, Y, h:i A',strtotime($o['created_at'])); ?></div>
                         <div class="actions">
                             <?php if($o['status']==='pending'): ?>
                                 <form method="POST" action="student-orders.php" style="display:inline;margin:0;padding:0;"><input type="hidden" name="order_id" value="<?php echo $o['orderId']; ?>"><input type="hidden" name="status" value="in_progress"><button type="submit" name="update_status" class="btn-small" style="background:var(--primary);border:none;color:#fff;cursor:pointer;margin:0;">Accept Order</button></form>
@@ -76,6 +77,106 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                             <?php elseif($o['status']==='in_progress'): ?>
                                 <form method="POST" action="student-orders.php" style="display:inline;margin:0;padding:0;" onsubmit="return confirm('Mark as delivered?');"><input type="hidden" name="order_id" value="<?php echo $o['orderId']; ?>"><input type="hidden" name="status" value="completed"><button type="submit" name="update_status" class="btn-small" style="background:var(--primary);border:none;color:#fff;cursor:pointer;margin:0;">Deliver &amp; Complete</button></form>
                             <?php endif; ?>
+                            <button id="chat-btn-<?php echo $o['orderId']; ?>" onclick="toggleChat(<?php echo $o['orderId']; ?>)" class="filter-btn" style="height:32px; padding:0 12px; font-size:13px; font-family:inherit; margin:0;"><i class="ti ti-message"></i> Open Chat</button>
+                        </div>
+
+                        <!-- Chat Box Container -->
+                        <div id="chat-box-<?php echo $o['orderId']; ?>" class="chat-container" style="display:none; text-align: left;">
+                            <div class="chat-header">
+                                <i class="ti ti-brand-hipchat" style="color:#10b981; font-size:16px;"></i>
+                                <span>Order Discussion Panel with <strong><?php echo htmlspecialchars($o['client_name']); ?></strong></span>
+                            </div>
+                            
+                            <div class="chat-history">
+                                <?php
+                                $msg_stmt = $pdo->prepare("
+                                    SELECT om.id, om.sender_id, om.message, om.file_path, om.sent_at, u.fullname 
+                                    FROM order_messages om 
+                                    JOIN users u ON om.sender_id = u.id 
+                                    WHERE om.order_id = ? AND om.deleted_by_student = 0
+                                    ORDER BY om.sent_at ASC
+                                ");
+                                $msg_stmt->execute([$o['orderId']]);
+                                $chat_history = $msg_stmt->fetchAll();
+
+                                if (!empty($chat_history)) {
+                                    foreach ($chat_history as $msg) {
+                                        $is_current_user = (intval($msg['sender_id']) === $user_id);
+                                        $bubble_class = $is_current_user ? 'chat-bubble-sent' : 'chat-bubble-received';
+                                        $meta_class = $is_current_user ? 'bubble-meta-sent' : 'bubble-meta-received';
+                                        $formatted_time = date('M d, g:i A', strtotime($msg['sent_at']));
+                                        
+                                        if ($is_current_user) {
+                                            $menu_options = '
+                                                <button onclick="editMessageInline(' . $msg['id'] . ')"><i class="ti ti-edit"></i> Edit</button>
+                                                <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete</button>
+                                            ';
+                                        } else {
+                                            $menu_options = '
+                                                <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete for Me</button>
+                                            ';
+                                        }
+                                        ?>
+                                        <div class="chat-bubble <?php echo $bubble_class; ?>" data-msg-id="<?php echo $msg['id']; ?>">
+                                            <div style="font-weight: 600; font-size: 11px; color: <?php echo $is_current_user ? '#34d399' : 'var(--text-muted)'; ?>;">
+                                                <?php echo htmlspecialchars($msg['fullname']); ?>
+                                            </div>
+                                            
+                                            <div class="bubble-menu-container">
+                                                <button class="bubble-menu-btn" onclick="toggleBubbleMenu(event, <?php echo $msg['id']; ?>)">
+                                                    <i class="ti ti-dots-vertical"></i>
+                                                </button>
+                                                <div class="bubble-menu-dropdown" id="bubble-dropdown-<?php echo $msg['id']; ?>">
+                                                    <?php echo $menu_options; ?>
+                                                </div>
+                                            </div>
+
+                                            <?php if (!empty($msg['message'])): ?>
+                                                <div class="message-text" style="word-break: break-word; white-space: pre-wrap;"><?php echo htmlspecialchars($msg['message']); ?></div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($msg['file_path'])): 
+                                                $filename = basename($msg['file_path']);
+                                            ?>
+                                                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                                                    <a href="<?php echo htmlspecialchars($msg['file_path']); ?>" download class="attachment-btn" style="color: #10b981; text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+                                                        <i class="ti ti-download"></i> Download <?php echo htmlspecialchars($filename); ?>
+                                                    </a>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div class="bubble-meta <?php echo $meta_class; ?>">
+                                                <span><?php echo $formatted_time; ?></span>
+                                            </div>
+                                        </div>
+                                        <?php
+                                    }
+                                } else {
+                                    echo "<div class='no-messages' style='text-align:center; padding: 2rem 0; color:var(--text-muted); font-size: 13px;'>
+                                            <i class='ti ti-messages' style='font-size: 24px; color:#10b981; display:block; margin-bottom: 6px;'></i>
+                                            No messages yet. Send a message to start discussing.
+                                          </div>";
+                                }
+                                ?>
+                            </div>
+
+                            <form class="chat-input-form" id="chat-form-<?php echo $o['orderId']; ?>" onsubmit="submitChatMessage(event, <?php echo $o['orderId']; ?>)" enctype="multipart/form-data">
+                                <input type="hidden" name="order_id" value="<?php echo $o['orderId']; ?>">
+                                <button type="button" onclick="document.getElementById('attachment-<?php echo $o['orderId']; ?>').click()" class="filter-btn" style="height: 44px; width: 44px; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 16px; border-color: var(--border-color); background: rgba(255,255,255,0.02);">
+                                    <i class="ti ti-paperclip"></i>
+                                </button>
+                                <input type="file" name="attachment" id="attachment-<?php echo $o['orderId']; ?>" style="display: none;" onchange="handleFileSelected(<?php echo $o['orderId']; ?>)">
+                                
+                                <div style="flex: 1; display: flex; flex-direction: column;">
+                                    <textarea name="message" id="message-text-<?php echo $o['orderId']; ?>" class="chat-textarea" placeholder="Type your message here..." onkeydown="handleTextareaKeydown(event, <?php echo $o['orderId']; ?>)"></textarea>
+                                    <div id="file-name-badge-<?php echo $o['orderId']; ?>" style="display: none; align-items: center; gap: 6px; font-size: 11px; color: #10b981; margin-top: 4px; background: rgba(16, 185, 129, 0.08); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.15); width: fit-content;">
+                                        <i class="ti ti-file"></i> <span class="file-txt"></span>
+                                        <button type="button" onclick="clearFileSelected(<?php echo $o['orderId']; ?>)" style="background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size: 13px; line-height: 1; margin-left: 4px;">&times;</button>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="chat-btn-send">
+                                    <i class="ti ti-send"></i> Send
+                                </button>
+                            </form>
                         </div>
                     </div>
                 <?php endforeach; endif; ?>
@@ -83,5 +184,8 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
         </div>
     </main>
 </div>
+<script>
+    const currentUserId = <?php echo json_encode($user_id); ?>;
+</script>
 <script src="js/student.js"></script>
 <?php include_once __DIR__ . '/includes/footer.php'; ?>
