@@ -442,7 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
         <div class="input-group">
             <label for="business_phone">Contact Phone Number</label>
-            <input type="text" name="business_phone" id="business_phone" required placeholder="e.g. +94771234567">
+            <input type="text" name="business_phone" id="business_phone" required placeholder="e.g. +94771234567" maxlength="10" inputmode="numeric">
         </div>
 
         <div class="input-group">
@@ -517,6 +517,29 @@ const departmentsByFaculty = {
 document.addEventListener("DOMContentLoaded", function () {
     const facultySelect = document.getElementById("faculty");
     const departmentSelect = document.getElementById("department");
+    const business_phone = document.getElementById("business_phone");
+    const clientForm =  document.getElementById("step2-client-form");
+
+    if (clientForm && phoneInput) {
+        clientForm.addEventListener("submit", function (event) {
+            const phoneValue = phoneInput.value.trim();
+            
+            const srilankaPhoneRegex = /^07[012345678]\d{7}$/;
+
+            if (!srilankaPhoneRegex.test(phoneValue)) {
+                event.preventDefault(); 
+                
+                alert("Please enter a valid 10-digit Sri Lankan phone number starting with a valid prefix (Dialog, Mobitel, Hutch, Airtel).");
+                
+                phoneInput.focus();
+                return false;
+            }
+        });
+
+        phoneInput.addEventListener("input", function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
 
     if (facultySelect && departmentSelect) {
         facultySelect.addEventListener("change", function () {
