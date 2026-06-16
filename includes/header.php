@@ -23,15 +23,15 @@ include 'db.php';
 </head>
 <body>
     <nav>
-        <a href="index.php" class="logo">UniLance</a>
+        <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
-            <li><a href="index.php">Home</a></li>
+            <li><a href="student_freelancer_site.php">Home</a></li>
             <li><a href="jobs.php">Browse Jobs</a></li>
             <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                 <li><a href="post-job.php">Post a Job</a></li>
-                <li><a href="dashboard.php">Dashboard</a></li>
+                 <li><a href="student-post-job.php">Post a Gig</a></li>
+                <li><a href="student-dashboard.php">Dashboard</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">

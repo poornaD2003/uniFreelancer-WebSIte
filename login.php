@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                     $error = "🚫 Your account has been suspended by an administrator.";
                     session_destroy();
                 } else {
-                    header("Location: index.php");
+                    header("Location: student_freelancer_site.php");
                     exit();
                 }
                 
