@@ -19,24 +19,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['post_gig'])) {
         $title=trim($_POST['title']??''); $category=trim($_POST['category']??'Development'); $price=(float)($_POST['price']??0); $desc=trim($_POST['description']??'');
         if(!empty($title)&&!empty($desc)&&$price>0){
-            $s=$conn->prepare("INSERT INTO gigs (student_id,title,image,description,price,category,status) VALUES(?,?,'default.png',?,?,?,'pending')");
-            if($s){$s->bind_param("issds",$user_id,$title,$desc,$price,$category);if($s->execute())$msg="✓ Gig posted! (Pending Approval)";else $error_msg="Failed to post.";$s->close();}
+            $img = 'default.png';
+            if (isset($_FILES['gig_image']) && $_FILES['gig_image']['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($_FILES['gig_image']['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                    if (!is_dir(__DIR__ . '/uploads')) { mkdir(__DIR__ . '/uploads', 0777, true); }
+                    $img = uniqid('gig_', true) . '.' . $ext;
+                    move_uploaded_file($_FILES['gig_image']['tmp_name'], __DIR__ . '/uploads/' . $img);
+                }
+            }
+            $s=$conn->prepare("INSERT INTO gigs (student_id,title,image,description,price,category,status) VALUES(?,?,?,?,?,?,'pending')");
+            if($s){$s->bind_param("isssds",$user_id,$title,$img,$desc,$price,$category);if($s->execute())$msg="✓ Gig posted! (Pending Approval)";else $error_msg="Failed to post.";$s->close();}
         } else { $error_msg="Please complete all fields."; }
     }
     if (isset($_POST['edit_gig'])) {
         $gid=(int)($_POST['gig_id']??0); $et=trim($_POST['e_title']??''); $ec=trim($_POST['e_category']??'Development'); $ep=(float)($_POST['e_price']??0); $ed=trim($_POST['e_description']??'');
         if($gid>0&&!empty($et)&&!empty($ed)&&$ep>0){
-            $s=$conn->prepare("SELECT status FROM gigs WHERE id=? AND student_id=? LIMIT 1");
+            $s=$conn->prepare("SELECT status, image FROM gigs WHERE id=? AND student_id=? LIMIT 1");
             if($s){$s->bind_param("ii",$gid,$user_id);$s->execute();$chk=$s->get_result()->fetch_assoc();$s->close();
-                if($chk&&$chk['status']==='pending'){
-                    $s=$conn->prepare("UPDATE gigs SET title=?,description=?,price=?,category=? WHERE id=? AND student_id=?");
-                    if($s){$s->bind_param("ssdsii",$et,$ed,$ep,$ec,$gid,$user_id);if($s->execute())$msg="✓ Gig updated.";else $error_msg="Update failed.";$s->close();}
+                if($chk){
+                    $img = $chk['image'];
+                    if (isset($_FILES['e_gig_image']) && $_FILES['e_gig_image']['error'] === UPLOAD_ERR_OK) {
+                        $ext = strtolower(pathinfo($_FILES['e_gig_image']['name'], PATHINFO_EXTENSION));
+                        if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                            if (!is_dir(__DIR__ . '/uploads')) { mkdir(__DIR__ . '/uploads', 0777, true); }
+                            $new_img = uniqid('gig_', true) . '.' . $ext;
+                            if (move_uploaded_file($_FILES['e_gig_image']['tmp_name'], __DIR__ . '/uploads/' . $new_img)) {
+                                if ($img !== 'default.png' && file_exists(__DIR__ . '/uploads/' . $img)) {
+                                    unlink(__DIR__ . '/uploads/' . $img);
+                                }
+                                $img = $new_img;
+                            }
+                        }
+                    }
+                    $s=$conn->prepare("UPDATE gigs SET title=?,description=?,price=?,category=?,image=? WHERE id=? AND student_id=?");
+                    if($s){$s->bind_param("ssdsiii",$et,$ed,$ep,$ec,$img,$gid,$user_id);if($s->execute())$msg="✓ Gig updated.";else $error_msg="Update failed.";$s->close();}
                 } else { $error_msg="Only pending gigs can be edited."; }
             }
         } else { $error_msg="Fill all fields to update."; }
     }
     if (isset($_POST['delete_gig'])) {
-        $gid=(int)$_POST['gig_id'];$s=$conn->prepare("DELETE FROM gigs WHERE id=? AND student_id=?");
+        $gid=(int)$_POST['gig_id'];
+        $s=$conn->prepare("SELECT image FROM gigs WHERE id=? AND student_id=? LIMIT 1");
+        if($s){$s->bind_param("ii",$gid,$user_id);$s->execute();$chk=$s->get_result()->fetch_assoc();$s->close();
+            if($chk && $chk['image'] !== 'default.png' && file_exists(__DIR__ . '/uploads/' . $chk['image'])) {
+                unlink(__DIR__ . '/uploads/' . $chk['image']);
+            }
+        }
+        $s=$conn->prepare("DELETE FROM gigs WHERE id=? AND student_id=?");
         if($s){$s->bind_param("ii",$gid,$user_id);if($s->execute())$msg="✓ Gig deleted.";else $error_msg="Delete failed.";$s->close();}
     }
 }
@@ -71,11 +101,12 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
             <?php else: ?>
                 <div class="step-progress"><div class="step-wrapper"><div class="step-bubble done">✓</div><div class="step-label">Basic Info</div></div><div class="step-line" style="opacity:.7;"></div><div class="step-wrapper"><div class="step-bubble active">2</div><div class="step-label">Description</div></div></div>
                 <div class="section-header"><i class="fas fa-align-left"></i> Step 2: Description</div>
-                <form method="POST" action="student-post-job.php">
+                <form method="POST" action="student-post-job.php" enctype="multipart/form-data">
                     <input type="hidden" name="title" value="<?php echo htmlspecialchars($temp_title); ?>">
                     <input type="hidden" name="category" value="<?php echo htmlspecialchars($temp_category); ?>">
                     <input type="hidden" name="price" value="<?php echo htmlspecialchars($temp_price); ?>">
                     <div class="input-group"><label>Describe Your Service</label><textarea name="description" rows="6" placeholder="Describe what you offer, deliverables, timelines..." required></textarea></div>
+                    <div class="input-group"><label>Service Image (Optional)</label><input type="file" name="gig_image" accept="image/*"></div>
                     <div style="display:flex;gap:1rem;margin-top:.5rem;">
                         <button type="submit" name="back_to_step1" formnovalidate style="background:transparent;border:1px solid var(--border-color);color:var(--text-main);flex:1;">&larr; Back</button>
                         <button type="submit" name="post_gig" style="flex:2;">✓ Post Service Gig</button>
@@ -95,27 +126,32 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                             <span class="badge badge-<?php echo $gig['status']; ?>"><?php echo $gig['status']==='approve'?'Approved':'Pending'; ?></span>
                         </div>
                         <div class="post-meta"><strong>Category:</strong> <?php echo htmlspecialchars($gig['category']); ?> &nbsp;|&nbsp; <strong>Price:</strong> Rs. <?php echo number_format($gig['price'],2); ?> &nbsp;|&nbsp; <strong>Created:</strong> <?php echo date('M d, Y',strtotime($gig['created_at'])); ?></div>
+                        <?php if(!empty($gig['image']) && $gig['image'] !== 'default.png'): ?>
+                            <div class="post-image" style="margin: 10px 0;">
+                                <img src="uploads/<?php echo htmlspecialchars($gig['image']); ?>" alt="Gig Image" style="max-width: 150px; max-height: 100px; border-radius: 6px; border: 1px solid var(--border-color); display: block;">
+                            </div>
+                        <?php endif; ?>
                         <div class="post-desc"><?php echo nl2br(htmlspecialchars($gig['description'])); ?></div>
                         <div class="actions">
-                            <?php if($ip): ?><button type="button" class="btn-small" onclick="toggleEdit(<?php echo $gig['id']; ?>)" style="background:var(--primary);color:#fff;border:none;cursor:pointer;"><i class="fas fa-pen"></i> Edit</button>
-                            <?php else: ?><button type="button" class="btn-edit-disabled" disabled title="Approved gigs cannot be edited."><i class="fas fa-lock"></i> Edit Locked</button><?php endif; ?>
+                            <button type="button" class="btn-small" onclick="toggleEdit(<?php echo $gig['id']; ?>)">
+                            <i class="fas fa-pen"></i> Edit
+                        </button>
                             <form method="POST" action="student-post-job.php" onsubmit="return confirm('Delete this gig?');" style="margin:0;padding:0;"><input type="hidden" name="gig_id" value="<?php echo $gig['id']; ?>"><button type="submit" name="delete_gig" class="btn-small" style="background:#ef4444;border:none;color:#fff;cursor:pointer;margin:0;"><i class="fas fa-trash"></i> Delete</button></form>
                         </div>
-                        <?php if($ip): ?>
                         <div class="edit-panel" id="edit-panel-<?php echo $gig['id']; ?>">
-                            <form method="POST" action="student-post-job.php">
+                            <form method="POST" action="student-post-job.php" enctype="multipart/form-data">
                                 <input type="hidden" name="gig_id" value="<?php echo $gig['id']; ?>">
                                 <label>Gig Title</label><input type="text" name="e_title" value="<?php echo htmlspecialchars($gig['title']); ?>" required>
                                 <label>Category</label><select name="e_category" required><?php foreach(['Development','Design','Writing','Tutoring','Other'] as $c): ?><option value="<?php echo $c; ?>"<?php echo $gig['category']===$c?' selected':''; ?>><?php echo $c; ?></option><?php endforeach; ?></select>
                                 <label>Price (LKR)</label><input type="number" step="0.01" min="1" name="e_price" value="<?php echo $gig['price']; ?>" required>
                                 <label>Description</label><textarea name="e_description" rows="4" required><?php echo htmlspecialchars($gig['description']); ?></textarea>
+                                <label>Change Service Image (Optional)</label><input type="file" name="e_gig_image" accept="image/*" style="margin-bottom: 1rem;">
                                 <div class="edit-actions">
                                     <button type="submit" name="edit_gig" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:.75rem 1.5rem;cursor:pointer;font-weight:600;font-family:inherit;flex:1;"><i class="fas fa-save"></i> Save Changes</button>
                                     <button type="button" onclick="toggleEdit(<?php echo $gig['id']; ?>)" style="background:transparent;border:1px solid var(--border-color);color:var(--text-main);border-radius:8px;padding:.75rem 1.5rem;cursor:pointer;font-weight:600;font-family:inherit;">Cancel</button>
                                 </div>
                             </form>
                         </div>
-                        <?php endif; ?>
                     </div>
                 <?php endforeach; endif; ?>
             </div>
