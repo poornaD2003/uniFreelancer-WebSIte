@@ -36,9 +36,6 @@ include 'db.php';
         </ul>
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
-          //  echo $_SESSION['user_id'];
-            //echo $_SESSION['role'];
-                // Determine the correct profile page based on user role
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
                 $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
             ?>
