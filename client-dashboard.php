@@ -58,96 +58,201 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
     <title>UniLance Client Center</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         :root {
-            --color-background-primary: #0b0f19;
-            --color-background-secondary: #111827;
-            --color-border-tertiary: #1f2937;
-            --color-text-primary: #f3f4f6;
-            --color-text-secondary: #9ca3af;
-            --border-radius-md: 8px;
-            --border-radius-lg: 12px;
+            --color-background-primary: #f0fdf8; /* Light cool mint tint */
+            --color-background-secondary: #ffffff; /* Pure white surface */
+            --color-sidebar-bg: #f8fafc; /* Very light slate-gray */
+            --color-border-tertiary: rgba(16, 185, 129, 0.14); /* Soft emerald/mint border */
+            --color-text-primary: #0f172a; /* Dark slate text */
+            --color-text-secondary: #64748b; /* Muted slate text */
+            --border-radius-md: 10px;
+            --border-radius-lg: 18px;
+            --shadow-sm: 0 4px 20px rgba(16, 185, 129, 0.05);
+            --shadow-lg: 0 16px 48px rgba(16, 185, 129, 0.10);
+            --color-accent: #1D9E75;
         }
-        body { background: var(--color-background-primary); color: var(--color-text-primary); font-family: sans-serif; padding: 20px; }
-        .sidebar {
-            width: 240px; min-height: 600px;
+        
+        body { 
+            background: var(--color-background-primary); 
+            color: var(--color-text-primary); 
+            font-family: 'Outfit', sans-serif; 
+            padding: 30px 20px; 
+        }
+        
+        .main-container {
+            display: flex; 
+            border: 1px solid var(--color-border-tertiary); 
+            border-radius: var(--border-radius-lg); 
+            overflow: hidden; 
+            min-height: 680px;
             background: var(--color-background-secondary);
-            border-right: 0.5px solid var(--color-border-tertiary);
-            padding: 1.5rem 0;
-            display: flex; flex-direction: column; gap: 4px;
+            box-shadow: var(--shadow-lg);
         }
+
+        .sidebar {
+            width: 260px; 
+            min-height: 600px;
+            background: var(--color-sidebar-bg);
+            border-right: 1px solid var(--color-border-tertiary);
+            padding: 1.75rem 0;
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px;
+        }
+        
         .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 12px 20px;
-            font-size: 14px; color: var(--color-text-secondary);
-            cursor: pointer; border: none; background: none;
-            width: 100%; text-align: left; transition: all 0.2s;
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            padding: 14px 24px;
+            font-size: 14.5px; 
+            color: var(--color-text-secondary);
+            cursor: pointer; 
+            border: none; 
+            background: none;
+            width: 100%; 
+            text-align: left; 
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: inherit;
+            font-weight: 500;
         }
+        
+        .nav-item:hover {
+            background: rgba(16, 185, 129, 0.04);
+            color: var(--color-text-primary);
+        }
+
         .nav-item.active {
             background: var(--color-background-primary);
-            color: var(--color-text-primary);
-            font-weight: 500;
-            border-left: 3px solid #1D9E75;
-            padding-left: 17px;
+            color: var(--color-accent);
+            font-weight: 600;
+            border-left: 4px solid var(--color-accent);
+            padding-left: 20px;
         }
-        .nav-item i { font-size: 18px; }
+        
+        .nav-item i { font-size: 19px; }
+        
         .metric-card {
             background: var(--color-background-secondary);
             border-radius: var(--border-radius-md);
-            padding: 1rem 1.25rem;
-            flex: 1; min-width: 200px;
-            border: 0.5px solid var(--color-border-tertiary);
+            padding: 1.25rem 1.5rem;
+            flex: 1; 
+            min-width: 220px;
+            border: 1px solid var(--color-border-tertiary);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-        .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08);
+        }
+        
+        .metric-label { 
+            font-size: 13px; 
+            color: var(--color-text-secondary); 
+            margin-bottom: 8px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-weight: 500;
+        }
+        
+        .metric-value { font-size: 26px; font-weight: 700; color: var(--color-text-primary); }
+        
         .metric-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
-        .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; display: inline-block; }
-        .badge-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-        .badge-completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        
+        .badge { font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 600; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-pending { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+        .badge-completed { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+        
         .section { display: none; }
-        .section.visible { display: block; }
-        .filter-btn {
-            font-size: 12px; padding: 6px 14px;
-            border: 0.5px solid var(--color-border-tertiary);
-            background: var(--color-background-primary);
-            border-radius: var(--border-radius-md);
-            color: var(--color-text-secondary); cursor: pointer;
+        .section.visible { display: block; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .filter-btn.active-filter { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+
+        .filter-btn {
+            font-size: 13px; 
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-tertiary);
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            color: var(--color-text-secondary); 
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+        
+        .filter-btn.active-filter { 
+            background: var(--color-accent); 
+            color: #fff; 
+            border-color: var(--color-accent); 
+            box-shadow: 0 4px 14px rgba(29, 158, 117, 0.25);
+        }
+        
         .gig-card {
-            border: 0.5px solid var(--color-border-tertiary);
+            border: 1px solid var(--color-border-tertiary);
             border-radius: var(--border-radius-lg);
             background: var(--color-background-secondary);
-            padding: 1.25rem;
-            display: flex; flex-direction: column; gap: 10px;
+            padding: 1.5rem;
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        textarea { width: 100%; height: 90px; padding: 10px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); color: white; border-radius: var(--border-radius-md); }
+
+        .gig-card:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08);
+        }
+        
+        textarea { 
+            width: 100%; 
+            height: 100px; 
+            padding: 12px; 
+            background: #f8fafc; 
+            border: 1px solid var(--color-border-tertiary); 
+            color: var(--color-text-primary); 
+            border-radius: var(--border-radius-md); 
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+        textarea:focus {
+            border-color: var(--color-accent);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.08);
+        }
     </style>
 
     <script>
         function switchTab(name, btn) {
-            // 1. Hide all sections
             document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
-
-            // 2. Show the target section
             var target = document.getElementById(name);
             if (target) {
                 target.classList.add('visible');
             }
-
-            // 3. Remove active state from all buttons
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-
-            // 4. Add active state to the clicked button
             if (btn) {
                 btn.classList.add('active');
             } else {
-                // If btn isn't provided (e.g., loaded from URL hash), find the right button and activate it
                 var activeBtn = document.querySelector(`.nav-item[onclick*="${name}"]`);
                 if (activeBtn) activeBtn.classList.add('active');
             }
-
-            // 5. Update browser URL hash quietly
             if (history.pushState) {
                 history.pushState(null, null, '#' + name);
             } else {
@@ -201,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
 <body>
 
 <?php if (isset($_GET['success'])): ?>
-    <div id="success-toast" style="position: fixed; top: 80px; right: 20px; background: rgba(29, 158, 117, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: white; padding: 14px 24px; border-radius: var(--border-radius-md); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); border: 1px solid rgba(255,255,255,0.1); z-index: 1000; display: flex; align-items: center; gap: 12px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(-20px); opacity: 0;">
+    <div id="success-toast" style="position: fixed; top: 30px; right: 20px; background: rgba(29, 158, 117, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: white; padding: 14px 24px; border-radius: var(--border-radius-md); box-shadow: 0 8px 32px 0 rgba(16,185,129,0.2); border: 1px solid rgba(255,255,255,0.1); z-index: 1000; display: flex; align-items: center; gap: 12px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(-20px); opacity: 0;">
         <i class="ti ti-circle-check" style="font-size: 20px;"></i>
         <span style="font-size: 14px; font-weight: 500;">Order placed successfully!</span>
         <button onclick="dismissToast()" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 18px; margin-left: 8px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; transition: color 0.2s;">&times;</button>
@@ -227,15 +332,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
     </script>
 <?php endif; ?>
 
-<div style="display:flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; min-height: 650px;">
+<div class="main-container">
   
   <div class="sidebar">
-    <div style="padding: 0 20px 1rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0.5rem;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div style="width:38px;height:38px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:white;"><?php echo $initials; ?></div>
+    <div style="padding: 0 24px 1.25rem; border-bottom: 1px solid var(--color-border-tertiary); margin-bottom: 0.75rem;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--color-accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;box-shadow:0 4px 12px rgba(29,158,117,0.2);"><?php echo $initials; ?></div>
         <div>
-          <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);"><?php echo $customer_name; ?></div>
-          <div style="font-size:11px;color:var(--color-text-secondary);">Customer Portal</div>
+            <div style="font-size:11.5px;color:var(--color-text-secondary);font-weight: 500;">Customer Portal</div>
         </div>
       </div>
     </div>
@@ -244,40 +348,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
     <button class="nav-item" onclick="switchTab('status',this)"><i class="ti ti-list-check" aria-hidden="true"></i> Order Status</button>
   </div>
 
-  <div style="flex:1; padding: 1.5rem; overflow:auto;">
+  <div style="flex:1; padding: 2rem; overflow:auto;">
 
     <div id="dashboard" class="section visible">
-      <div style="margin-bottom:1.25rem;">
-        <div style="font-size:18px;font-weight:500;">Welcome, <?php echo $customer_name; ?> 👋</div>
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Here's an overview of your workspace activities</div>
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;">Welcome, <?php echo $customer_name; ?> 👋</div>
+        <div style="font-size:13.5px;color:var(--color-text-secondary);margin-top:4px;font-weight:500;">Here's an overview of your workspace activities</div>
       </div>
 
-      <div style="display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div style="display:flex;gap:16px;margin-bottom:2rem;flex-wrap:wrap;">
         <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-shopping-bag"></i> Total orders</div>
+          <div class="metric-label"><i class="ti ti-shopping-bag" style="color: var(--color-accent)"></i> Total orders</div>
           <div class="metric-value"><?php echo $total_orders; ?></div>
           <div class="metric-sub">All time activity</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-clock"></i> Pending</div>
-          <div class="metric-value" style="color:#f59e0b;"><?php echo $pending_orders; ?></div>
+          <div class="metric-label"><i class="ti ti-clock" style="color:#f59e0b;"></i> Pending</div>
+          <div class="metric-value" style="color:#d97706;"><?php echo $pending_orders; ?></div>
           <div class="metric-sub">Awaiting delivery execution</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-circle-check"></i> Completed</div>
+          <div class="metric-label"><i class="ti ti-circle-check" style="color:#10b981;"></i> Completed</div>
           <div class="metric-value" style="color:#10b981;"><?php echo $completed_orders; ?></div>
           <div class="metric-sub">Successfully deployed</div>
         </div>
       </div>
 
-      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; border: 0.5px solid var(--color-border-tertiary);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Recent Pipeline Entries</div>
-        <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem 1.5rem; border: 1px solid var(--color-border-tertiary); box-shadow: var(--shadow-sm);">
+        <div style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--color-text-primary);">Recent Pipeline Entries</div>
+        <table style="width:100%;font-size:13.5px;border-collapse:collapse;">
           <thead>
-            <tr style="color:var(--color-text-secondary); text-align: left;">
-              <th style="padding:8px 0;">Job Architecture</th>
-              <th style="padding:8px 0;">Student Freelancer</th>
-              <th style="padding:8px 0;">Status Badge</th>
+            <tr style="color:var(--color-text-secondary); text-align: left; font-weight: 600;">
+              <th style="padding:10px 0;">Job Architecture</th>
+              <th style="padding:10px 0;">Student Freelancer</th>
+              <th style="padding:10px 0;">Status Badge</th>
             </tr>
           </thead>
           <tbody>
@@ -286,14 +390,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
             if ($recent_query && $recent_query->num_rows > 0) {
                 while($r = $recent_query->fetch_assoc()) {
                     $badge = ($r['status'] === 'pending') ? 'badge-pending' : 'badge-completed';
-                    echo "<tr style='border-top:0.5px solid var(--color-border-tertiary);'>
-                            <td style='padding:12px 0;'>{$r['title']}</td>
-                            <td style='padding:12px 0;color:var(--color-text-secondary);'>{$r['student_name']}</td>
-                            <td style='padding:12px 0;'><span class='badge {$badge}'>" . ucfirst($r['status']) . "</span></td>
+                    echo "<tr style='border-top:1px solid var(--color-border-tertiary);'>
+                            <td style='padding:14px 0; font-weight:500;'>{$r['title']}</td>
+                            <td style='padding:14px 0;color:var(--color-text-secondary);'>{$r['student_name']}</td>
+                            <td style='padding:14px 0;'><span class='badge {$badge}'>" . ucfirst($r['status']) . "</span></td>
                           </tr>";
                 }
             } else {
-                echo "<tr><td colspan='3' style='padding:10px 0;color:var(--color-text-secondary);'>No recent records found.</td></tr>";
+                echo "<tr><td colspan='3' style='padding:14px 0;color:var(--color-text-secondary);text-align:center;'>No recent records found.</td></tr>";
             }
             ?>
           </tbody>
@@ -302,64 +406,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
     </div>
 
     <div id="order" class="section">
-      <div style="font-size:18px;font-weight:500;margin-bottom:4px;">Place an order</div>
-      <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;">Browse student listings and register a project requirement entry</div>
+      <div style="font-size:22px;font-weight:700;margin-bottom:4px;letter-spacing:-0.02em;">Place an order</div>
+      <div style="font-size:13.5px;color:var(--color-text-secondary);margin-bottom:1.5rem;font-weight:500;">Browse student listings and register a project requirement entry</div>
 
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1.5rem;">
+      <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:2rem;">
         <?php
-        $gigs_query = $conn->query("SELECT g.id, g.title, g.description, g.price  , u.fullname as student_name FROM gigs g JOIN users u ON g.student_id = u.id");
+        $gigs_query = $conn->query("SELECT g.id, g.title, g.description, g.price, u.fullname as student_name FROM gigs g JOIN users u ON g.student_id = u.id");
         if ($gigs_query && $gigs_query->num_rows > 0) {
             while($gig = $gigs_query->fetch_assoc()) {
                 echo "<div class='gig-card'>
-                        <div style='display:flex;justify-content:space-between;'>
+                        <div style='display:flex;justify-content:space-between;align-items:flex-start;'>
                             <div>
-                                <div style='font-size:14px;font-weight:500;'>{$gig['title']}</div>
-                                <div style='font-size:12px;color:var(--color-text-secondary);margin-top:2px;'>by {$gig['student_name']}</div>
+                                <div style='font-size:16px;font-weight:600;color:var(--color-text-primary);'>{$gig['title']}</div>
+                                <div style='font-size:12.5px;color:var(--color-text-secondary);margin-top:2px;font-weight:500;'>by {$gig['student_name']}</div>
                             </div>
                             <div style='text-align:right;'>
-                                <div style='font-size:14px;font-weight:500;color:#1D9E75;'>Rs. " . number_format($gig['price']) . "</div>
-                                <div style='font-size:11px;color:var(--color-text-secondary);'>Runtime: {$gig['delivery_days']} days</div>
+                                <div style='font-size:16px;font-weight:700;color:var(--color-accent);'>Rs. " . number_format($gig['price']) . "</div>
                             </div>
                         </div>
-                        <div style='font-size:12px;color:var(--color-text-secondary);'>{$gig['description']}</div>
-                        <button onclick=\"showOrderForm('{$gig['id']}','" . addslashes($gig['title']) . "','" . addslashes($gig['student_name']) . "','Rs. " . number_format($gig['price']) . "')\" style='align-self:flex-start;background:#1D9E75;color:white;border:none;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;'>Order now</button>
+                        <div style='font-size:13px;color:var(--color-text-secondary);line-height:1.5;'>{$gig['description']}</div>
+                        <button onclick=\"showOrderForm('{$gig['id']}','" . addslashes($gig['title']) . "','" . addslashes($gig['student_name']) . "','Rs. " . number_format($gig['price']) . "')\" style='align-self:flex-start;background:var(--color-accent);color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 12px rgba(29,158,117,0.15);font-family:inherit;'>Order now</button>
                       </div>";
             }
         }
         ?>
       </div>
 
-      <div id="order-form-container" style="display:none;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1.25rem; border:0.5px solid var(--color-border-tertiary);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Confirm your transactional order record</div>
-        <form method="POST" action="client_dashboard.php" style="display:flex;flex-direction:column;gap:12px;max-width:420px;">
+      <div id="order-form-container" style="display:none;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.5rem; border:1px solid var(--color-border-tertiary);box-shadow:var(--shadow-sm); animation: fadeIn 0.3s ease;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--color-text-primary);">Confirm your transactional order record</div>
+        <form method="POST" action="client_dashboard.php" style="display:flex;flex-direction:column;gap:14px;max-width:460px;">
           <input type="hidden" name="place_order_action" value="1">
           <input type="hidden" id="form-gig-id" name="gig_id">
 
-          <div style="font-size:13px;color:var(--color-text-secondary);">Target: <span id="form-gig-title" style="color:white;font-weight:500;"></span></div>
-          <div style="font-size:13px;color:var(--color-text-secondary);">Developer: <span id="form-student-name" style="color:white;font-weight:500;"></span></div>
-          <div style="font-size:13px;color:var(--color-text-secondary);">Costing: <span id="form-gig-price" style="color:#1D9E75;font-weight:500;"></span></div>
+          <div style="font-size:13.5px;color:var(--color-text-secondary);font-weight:500;">Target: <span id="form-gig-title" style="color:var(--color-text-primary);font-weight:600;"></span></div>
+          <div style="font-size:13.5px;color:var(--color-text-secondary);font-weight:500;">Developer: <span id="form-student-name" style="color:var(--color-text-primary);font-weight:600;"></span></div>
+          <div style="font-size:13.5px;color:var(--color-text-secondary);font-weight:500;">Costing: <span id="form-gig-price" style="color:var(--color-accent);font-weight:700;"></span></div>
 
           <div>
-            <label style="font-size:13px;color:var(--color-text-secondary);display:block;margin-bottom:5px;">Scope Requirements Documentation</label>
+            <label style="font-size:13px;color:var(--color-text-secondary);display:block;margin-bottom:6px;font-weight:600;">Scope Requirements Documentation</label>
             <textarea name="requirements" placeholder="Provide system specific context mapping rules..."></textarea>
           </div>
-          <div style="display:flex;gap:8px;">
-            <button type="submit" style="background:#1D9E75;color:white;border:none;padding:9px 20px;border-radius:4px;font-size:13px;cursor:pointer;">Confirm order</button>
-            <button type="button" onclick="document.getElementById('order-form-container').style.display='none'" style="background:none;border:0.5px solid var(--color-border-tertiary);padding:9px 20px;border-radius:4px;font-size:13px;cursor:pointer;color:var(--color-text-secondary);">Cancel</button>
+          <div style="display:flex;gap:10px;margin-top:4px;">
+            <button type="submit" style="background:var(--color-accent);color:white;border:none;padding:10px 22px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(29,158,117,0.2);font-family:inherit;">Confirm order</button>
+            <button type="button" onclick="document.getElementById('order-form-container').style.display='none'" style="background:none;border:1px solid var(--color-border-tertiary);padding:10px 22px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;color:var(--color-text-secondary);font-family:inherit;transition:all 0.2s;">Cancel</button>
           </div>
         </form>
       </div>
     </div>
 
     <div id="status" class="section">
-      <div style="font-size:18px;font-weight:500;margin-bottom:1.25rem;">My order status</div>
-      <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+      <div style="font-size:22px;font-weight:700;margin-bottom:1.25rem;letter-spacing:-0.02em;">My order status</div>
+      <div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap;">
         <button class="filter-btn active-filter" onclick="filterOrders('all',this)">All Listings</button>
         <button class="filter-btn" onclick="filterOrders('pending',this)">Pending Execution</button>
         <button class="filter-btn" onclick="filterOrders('completed',this)">Completed Pipeline</button>
       </div>
 
-      <div id="order-rows" style="display:flex;flex-direction:column;gap:10px;">
+      <div id="order-rows" style="display:flex;flex-direction:column;gap:14px;">
         <?php
         $status_query = $conn->query("SELECT o.orderId, o.status, g.title, u.fullname as student_name, g.price FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.student_id = u.id WHERE o.client_id = '$client_id' ORDER BY o.orderId DESC");
         if ($status_query && $status_query->num_rows > 0) {
@@ -368,26 +471,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
                 $progress_width = ($row['status'] === 'pending') ? '45%' : '100%';
                 $progress_color = ($row['status'] === 'pending') ? '#1D9E75' : '#0F6E56';
 
-                echo "<div class='order-row' data-status='{$row['status']}' style='border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; background: var(--color-background-secondary);'>
-                        <div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'>
+                echo "<div class='order-row' data-status='{$row['status']}' style='border:1px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem 1.5rem; background: var(--color-background-secondary); box-shadow: var(--shadow-sm);'>
+                        <div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;'>
                             <div>
-                                <div style='font-size:14px;font-weight:500;'>{$row['title']}</div>
-                                <div style='font-size:12px;color:var(--color-text-secondary);margin-top:2px;'>Developer Relation: {$row['student_name']}</div>
+                                <div style='font-size:15px;font-weight:600;color:var(--color-text-primary);'>{$row['title']}</div>
+                                <div style='font-size:12.5px;color:var(--color-text-secondary);margin-top:2px;font-weight:500;'>Developer Relation: {$row['student_name']}</div>
                             </div>
-                            <div style='display:flex;align-items:center;gap:12px;'>
-                                <span style='font-size:13px;font-weight:500;'>Rs. " . number_format($row['price']) . "</span>
+                            <div style='display:flex;align-items:center;gap:16px;'>
+                                <span style='font-size:15px;font-weight:600;color:var(--color-text-primary);'>Rs. " . number_format($row['price']) . "</span>
                                 <span class='badge {$badge}'>" . ucfirst($row['status']) . "</span>
                             </div>
                         </div>
-                        <div style='margin-top:10px;'>
-                            <div style='background:var(--color-background-primary);border-radius:20px;height:6px;overflow:hidden;'>
+                        <div style='margin-top:14px;'>
+                            <div style='background:var(--color-background-primary);border-radius:20px;height:7px;overflow:hidden;'>
                                 <div style='width:{$progress_width};height:100%;background:{$progress_color};border-radius:20px;'></div>
                             </div>
                         </div>
                       </div>";
             }
         } else {
-            echo "<p style='color:var(--color-text-secondary);'>No registered transactional pipeline records tracked.</p>";
+            echo "<p style='color:var(--color-text-secondary);text-align:center;padding:20px;font-weight:500;'>No registered transactional pipeline records tracked.</p>";
         }
         ?>
       </div>
