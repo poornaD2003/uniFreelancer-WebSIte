@@ -6,57 +6,57 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id'])) {
-    $_SESSION['user_id'] = 1; // Testing purposes
-}
-$client_id = $_SESSION['user_id'];
-$open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
-
-$user_query = $conn->query("SELECT fullname FROM users WHERE id = '$client_id'");
-if ($user_query && $user_query->num_rows > 0) {
-    $user_data = $user_query->fetch_assoc();
-    $customer_name = $user_data['fullname'];
-} else {
-    $customer_name = "Guest User";
+// Ensure only logged-in students can access
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
+    header("Location: login.php");
+    exit();
 }
 
-$words = explode(" ", $customer_name);
+$student_id = $_SESSION['user_id'];
+
+// Get student name
+$user_stmt = $pdo->prepare("SELECT fullname FROM users WHERE id = ?");
+$user_stmt->execute([$student_id]);
+$user_data = $user_stmt->fetch();
+$student_name = $user_data ? $user_data['fullname'] : "Freelancer";
+
+// Generate initials for profile preview
+$words = explode(" ", $student_name);
 $initials = "";
 foreach ($words as $w) {
-    $initials .= strtoupper($w[0]);
+    if (!empty($w)) $initials .= strtoupper($w[0]);
 }
-$initials = substr($initials, 0, 2); 
+$initials = substr($initials, 0, 2);
 
-$total_orders_res = $conn->query("SELECT COUNT(*) as total FROM orders WHERE client_id = '$client_id'");
-$total_orders = $total_orders_res ? $total_orders_res->fetch_assoc()['total'] : 0;
+// Calculate student metrics
+// Total orders
+$total_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE student_id = ?");
+$total_stmt->execute([$student_id]);
+$total_orders = $total_stmt->fetch()['total'] ?? 0;
 
-$pending_orders_res = $conn->query("SELECT COUNT(*) as total FROM orders WHERE client_id = '$client_id' AND status = 'pending'");
-$pending_orders = $pending_orders_res ? $pending_orders_res->fetch_assoc()['total'] : 0;
+// Pending orders
+$pending_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE student_id = ? AND status = 'pending'");
+$pending_stmt->execute([$student_id]);
+$pending_orders = $pending_stmt->fetch()['total'] ?? 0;
 
-$completed_orders_res = $conn->query("SELECT COUNT(*) as total FROM orders WHERE client_id = '$client_id' AND status = 'completed'");
-$completed_orders = $completed_orders_res ? $completed_orders_res->fetch_assoc()['total'] : 0;
+// Completed orders
+$completed_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE student_id = ? AND status = 'completed'");
+$completed_stmt->execute([$student_id]);
+$completed_orders = $completed_stmt->fetch()['total'] ?? 0;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])) {
-    $gig_id = intval($_POST['gig_id']);
-    $requirements = $conn->real_escape_string($_POST['requirements']);
+// Earnings (sum of pricing of completed orders)
+$earnings_stmt = $pdo->prepare("SELECT SUM(g.price) as earnings FROM orders o JOIN gigs g ON o.gig_id = g.id WHERE o.student_id = ? AND o.status = 'completed'");
+$earnings_stmt->execute([$student_id]);
+$total_earnings = $earnings_stmt->fetch()['earnings'] ?? 0.00;
 
-    $gig_check = $conn->query("SELECT student_id FROM gigs WHERE id = '$gig_id'");
-    if ($gig_check && $gig_check->num_rows > 0) {
-        $student_id = $gig_check->fetch_assoc()['student_id'];
-
-        $insert_query = "INSERT INTO orders (client_id, student_id, gig_id, status) VALUES ('$client_id', '$student_id', '$gig_id', 'pending')";
-        if ($conn->query($insert_query)) {
-            header("Location: client_dashboard.php?success=1#status");
-            exit();
-        }
-    }
-}
+// Get parameter for active chat panel
+$open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UniLance Client Center</title>
+    <title>UniLance Student Hub</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,14 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
             color: var(--color-text-secondary); cursor: pointer;
         }
         .filter-btn.active-filter { background: #1D9E75; color: #fff; border-color: #1D9E75; }
-        .gig-card {
-            border: 0.5px solid var(--color-border-tertiary);
-            border-radius: var(--border-radius-lg);
-            background: var(--color-background-secondary);
-            padding: 1.25rem;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        textarea { width: 100%; height: 90px; padding: 10px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); color: white; border-radius: var(--border-radius-md); }
         
         /* Glassmorphic Order Chat Box Styles */
         .chat-container {
@@ -163,6 +155,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
             display: flex;
             flex-direction: column;
             gap: 4px;
+            position: relative;
+            padding-right: 30px !important; /* Make room for the menu button */
         }
         .chat-bubble-sent {
             align-self: flex-end;
@@ -241,10 +235,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
         }
         
         /* Three dot menu styles */
-        .chat-bubble {
-            position: relative;
-            padding-right: 30px !important; /* Make room for the menu button */
-        }
         .bubble-menu-container {
             position: absolute;
             top: 6px;
@@ -390,14 +380,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
             var tab = window.location.hash.substring(1);
             var match = window.location.search.match(/[?&]tab=([^&]+)/);
             var tabParam = match ? match[1] : null;
-            
-            var successMatch = window.location.search.match(/[?&]success=([^&]+)/);
-            var successParam = successMatch ? successMatch[1] : null;
 
             if (!tab && tabParam) tab = tabParam;
-            if (!tab && successParam) tab = 'status';
+            if (!tab) tab = 'dashboard';
 
-            var allowedTabs = ['dashboard', 'order', 'status'];
+            var allowedTabs = ['dashboard', 'status'];
             if (tab && allowedTabs.indexOf(tab) !== -1) {
                 switchTab(tab);
             }
@@ -405,6 +392,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
 
         window.addEventListener('DOMContentLoaded', handleRouting);
         window.addEventListener('hashchange', handleRouting);
+
+        function filterOrders(type, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter'));
+            btn.classList.add('active-filter');
+
+            document.querySelectorAll('.order-row-container').forEach(row => {
+                if (type === 'all' || row.dataset.status === type) {
+                    row.style.display = 'block';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
 
         function toggleChat(orderId) {
             var chatBox = document.getElementById('chat-box-' + orderId);
@@ -418,6 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
                         btn.style.color = '#ef4444';
                         btn.style.borderColor = 'rgba(239, 68, 68, 0.2)';
                     }
+                    // Scroll history to bottom
                     var historyDiv = chatBox.querySelector('.chat-history');
                     if (historyDiv) {
                         historyDiv.scrollTop = historyDiv.scrollHeight;
@@ -434,7 +435,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
             }
         }
 
-        const currentUserId = <?php echo json_encode($client_id); ?>;
+        const currentUserId = <?php echo json_encode($student_id); ?>;
 
         function escapeHtml(text) {
             if (!text) return '';
@@ -820,7 +821,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
             });
         }
 
-        // Run global polling for any open chat window every 2 seconds
+        // Global open chat interval polling
         setInterval(function() {
             document.querySelectorAll('.chat-container').forEach(function(chatBox) {
                 if (chatBox.style.display === 'flex') {
@@ -841,60 +842,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
                 }
             }
         });
-
-        function showOrderForm(id, gig, student, price) {
-            document.getElementById('form-gig-id').value = id;
-            document.getElementById('form-gig-title').textContent = gig;
-            document.getElementById('form-student-name').textContent = student;
-            document.getElementById('form-gig-price').textContent = price;
-            document.getElementById('order-form-container').style.display = 'block';
-            document.getElementById('order-form-container').scrollIntoView({behavior:'smooth'});
-        }
-
-        function filterOrders(type, btn) {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter'));
-            btn.classList.add('active-filter');
-
-            document.querySelectorAll('.order-row').forEach(row => {
-                if (type === 'all' || row.dataset.status === type) {
-                    row.style.display = 'block';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
     </script>
 </head>
 <body>
 
-<?php if (isset($_GET['success'])): ?>
-    <div id="success-toast" style="position: fixed; top: 80px; right: 20px; background: rgba(29, 158, 117, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: white; padding: 14px 24px; border-radius: var(--border-radius-md); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); border: 1px solid rgba(255,255,255,0.1); z-index: 1000; display: flex; align-items: center; gap: 12px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(-20px); opacity: 0;">
-        <i class="ti ti-circle-check" style="font-size: 20px;"></i>
-        <span style="font-size: 14px; font-weight: 500;">Order placed successfully!</span>
-        <button onclick="dismissToast()" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 18px; margin-left: 8px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; transition: color 0.2s;">&times;</button>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var toast = document.getElementById('success-toast');
-            if (toast) {
-                toast.offsetHeight;
-                toast.style.transform = 'translateY(0)';
-                toast.style.opacity = '1';
-                setTimeout(function() { dismissToast(); }, 5000);
-            }
-        });
-        function dismissToast() {
-            var toast = document.getElementById('success-toast');
-            if (toast) {
-                toast.style.transform = 'translateY(-20px)';
-                toast.style.opacity = '0';
-                setTimeout(function() { toast.remove(); }, 400);
-            }
-        }
-    </script>
-<?php endif; ?>
-
 <?php
+// Handle potential toast alerts
 $msg_status = $_GET['msg_status'] ?? '';
 if (!empty($msg_status)):
     $toast_bg = 'rgba(239, 68, 68, 0.95)';
@@ -916,19 +869,19 @@ if (!empty($msg_status)):
     <div id="toast-message" style="position: fixed; top: 80px; right: 20px; background: <?php echo $toast_bg; ?>; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: white; padding: 14px 24px; border-radius: var(--border-radius-md); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); border: 1px solid rgba(255,255,255,0.1); z-index: 1000; display: flex; align-items: center; gap: 12px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(-20px); opacity: 0;">
         <i class="ti <?php echo $toast_icon; ?>" style="font-size: 20px;"></i>
         <span style="font-size: 14px; font-weight: 500;"><?php echo htmlspecialchars($toast_text); ?></span>
-        <button onclick="dismissMsgToast()" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 18px; margin-left: 8px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px;">&times;</button>
+        <button onclick="dismissToast()" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 18px; margin-left: 8px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px;">&times;</button>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var toast = document.getElementById('toast-message');
             if (toast) {
-                toast.offsetHeight;
+                toast.offsetHeight; // Trigger reflow
                 toast.style.transform = 'translateY(0)';
                 toast.style.opacity = '1';
-                setTimeout(function() { dismissMsgToast(); }, 5000);
+                setTimeout(function() { dismissToast(); }, 5000);
             }
         });
-        function dismissMsgToast() {
+        function dismissToast() {
             var toast = document.getElementById('toast-message');
             if (toast) {
                 toast.style.transform = 'translateY(-20px)';
@@ -946,66 +899,73 @@ if (!empty($msg_status)):
       <div style="display:flex; align-items:center; gap:10px;">
         <div style="width:38px;height:38px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:white;"><?php echo $initials; ?></div>
         <div>
-          <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);"><?php echo $customer_name; ?></div>
-          <div style="font-size:11px;color:var(--color-text-secondary);">Customer Portal</div>
+          <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);"><?php echo htmlspecialchars($student_name); ?></div>
+          <div style="font-size:11px;color:var(--color-text-secondary);">Student Portal</div>
         </div>
       </div>
     </div>
     <button class="nav-item active" onclick="switchTab('dashboard',this)"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</button>
-    <button class="nav-item" onclick="switchTab('order',this)"><i class="ti ti-shopping-cart" aria-hidden="true"></i> Place Order</button>
-    <button class="nav-item" onclick="switchTab('status',this)"><i class="ti ti-list-check" aria-hidden="true"></i> Order Status</button>
+    <button class="nav-item" onclick="switchTab('status',this)"><i class="ti ti-list-check" aria-hidden="true"></i> Received Orders</button>
   </div>
 
   <div style="flex:1; padding: 1.5rem; overflow:auto;">
 
     <div id="dashboard" class="section visible">
       <div style="margin-bottom:1.25rem;">
-        <div style="font-size:18px;font-weight:500;">Welcome, <?php echo $customer_name; ?> 👋</div>
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Here's an overview of your workspace activities</div>
+        <div style="font-size:18px;font-weight:500;">Welcome back, <?php echo htmlspecialchars($student_name); ?> 👋</div>
+        <div style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Keep track of your gigs, earnings, and client messages</div>
       </div>
 
       <div style="display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;">
         <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-shopping-bag"></i> Total orders</div>
+          <div class="metric-label"><i class="ti ti-shopping-bag"></i> Received Orders</div>
           <div class="metric-value"><?php echo $total_orders; ?></div>
-          <div class="metric-sub">All time activity</div>
+          <div class="metric-sub">Lifetime projects</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-clock"></i> Pending</div>
+          <div class="metric-label"><i class="ti ti-clock"></i> Active Pending</div>
           <div class="metric-value" style="color:#f59e0b;"><?php echo $pending_orders; ?></div>
-          <div class="metric-sub">Awaiting delivery execution</div>
+          <div class="metric-sub">Work in progress</div>
         </div>
         <div class="metric-card">
           <div class="metric-label"><i class="ti ti-circle-check"></i> Completed</div>
           <div class="metric-value" style="color:#10b981;"><?php echo $completed_orders; ?></div>
-          <div class="metric-sub">Successfully deployed</div>
+          <div class="metric-sub">Delivered tasks</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label"><i class="ti ti-currency-dollar"></i> Net Earnings</div>
+          <div class="metric-value" style="color:#10b981;">Rs. <?php echo number_format($total_earnings, 2); ?></div>
+          <div class="metric-sub">Cleared payouts</div>
         </div>
       </div>
 
       <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; border: 0.5px solid var(--color-border-tertiary);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Recent Pipeline Entries</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Recent Work Orders</div>
         <table style="width:100%;font-size:13px;border-collapse:collapse;">
           <thead>
             <tr style="color:var(--color-text-secondary); text-align: left;">
-              <th style="padding:8px 0;">Job Architecture</th>
-              <th style="padding:8px 0;">Student Freelancer</th>
-              <th style="padding:8px 0;">Status Badge</th>
+              <th style="padding:8px 0;">Gig Title</th>
+              <th style="padding:8px 0;">Client Name</th>
+              <th style="padding:8px 0;">Status</th>
             </tr>
           </thead>
           <tbody>
             <?php
-            $recent_query = $conn->query("SELECT o.status, g.title, u.fullname as student_name FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.student_id = u.id WHERE o.client_id = '$client_id' ORDER BY o.orderId DESC LIMIT 3");
-            if ($recent_query && $recent_query->num_rows > 0) {
-                while($r = $recent_query->fetch_assoc()) {
+            $recent_stmt = $pdo->prepare("SELECT o.status, g.title, u.fullname as client_name FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.client_id = u.id WHERE o.student_id = ? ORDER BY o.orderId DESC LIMIT 3");
+            $recent_stmt->execute([$student_id]);
+            $recent_orders = $recent_stmt->fetchAll();
+
+            if (!empty($recent_orders)) {
+                foreach ($recent_orders as $r) {
                     $badge = ($r['status'] === 'pending') ? 'badge-pending' : 'badge-completed';
                     echo "<tr style='border-top:0.5px solid var(--color-border-tertiary);'>
-                            <td style='padding:12px 0;'>{$r['title']}</td>
-                            <td style='padding:12px 0;color:var(--color-text-secondary);'>{$r['student_name']}</td>
+                            <td style='padding:12px 0;'>" . htmlspecialchars($r['title']) . "</td>
+                            <td style='padding:12px 0;color:var(--color-text-secondary);'>" . htmlspecialchars($r['client_name']) . "</td>
                             <td style='padding:12px 0;'><span class='badge {$badge}'>" . ucfirst($r['status']) . "</span></td>
                           </tr>";
                 }
             } else {
-                echo "<tr><td colspan='3' style='padding:10px 0;color:var(--color-text-secondary);'>No recent records found.</td></tr>";
+                echo "<tr><td colspan='3' style='padding:10px 0;color:var(--color-text-secondary);'>No work orders received yet.</td></tr>";
             }
             ?>
           </tbody>
@@ -1013,168 +973,124 @@ if (!empty($msg_status)):
       </div>
     </div>
 
-    <div id="order" class="section">
-      <div style="font-size:18px;font-weight:500;margin-bottom:4px;">Place an order</div>
-      <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;">Browse student listings and register a project requirement entry</div>
-
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1.5rem;">
-        <?php
-        $gigs_query = $conn->query("SELECT g.id, g.title, g.description, g.price  , u.fullname as student_name FROM gigs g JOIN users u ON g.student_id = u.id");
-        if ($gigs_query && $gigs_query->num_rows > 0) {
-            while($gig = $gigs_query->fetch_assoc()) {
-                echo "<div class='gig-card'>
-                        <div style='display:flex;justify-content:space-between;'>
-                            <div>
-                                <div style='font-size:14px;font-weight:500;'>{$gig['title']}</div>
-                                <div style='font-size:12px;color:var(--color-text-secondary);margin-top:2px;'>by {$gig['student_name']}</div>
-                            </div>
-                            <div style='text-align:right;'>
-                                <div style='font-size:14px;font-weight:500;color:#1D9E75;'>Rs. " . number_format($gig['price']) . "</div>
-                            </div>
-                        </div>
-                        <div style='font-size:12px;color:var(--color-text-secondary);'>{$gig['description']}</div>
-                        <button onclick=\"showOrderForm('{$gig['id']}','" . addslashes($gig['title']) . "','" . addslashes($gig['student_name']) . "','Rs. " . number_format($gig['price']) . "')\" style='align-self:flex-start;background:#1D9E75;color:white;border:none;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;'>Order now</button>
-                      </div>";
-            }
-        }
-        ?>
-      </div>
-
-      <div id="order-form-container" style="display:none;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1.25rem; border:0.5px solid var(--color-border-tertiary);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Confirm your transactional order record</div>
-        <form method="POST" action="client_dashboard.php" style="display:flex;flex-direction:column;gap:12px;max-width:420px;">
-          <input type="hidden" name="place_order_action" value="1">
-          <input type="hidden" id="form-gig-id" name="gig_id">
-
-          <div style="font-size:13px;color:var(--color-text-secondary);">Target: <span id="form-gig-title" style="color:white;font-weight:500;"></span></div>
-          <div style="font-size:13px;color:var(--color-text-secondary);">Developer: <span id="form-student-name" style="color:white;font-weight:500;"></span></div>
-          <div style="font-size:13px;color:var(--color-text-secondary);">Costing: <span id="form-gig-price" style="color:#1D9E75;font-weight:500;"></span></div>
-
-          <div>
-            <label style="font-size:13px;color:var(--color-text-secondary);display:block;margin-bottom:5px;">Scope Requirements Documentation</label>
-            <textarea name="requirements" placeholder="Provide system specific context mapping rules..."></textarea>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button type="submit" style="background:#1D9E75;color:white;border:none;padding:9px 20px;border-radius:4px;font-size:13px;cursor:pointer;">Confirm order</button>
-            <button type="button" onclick="document.getElementById('order-form-container').style.display='none'" style="background:none;border:0.5px solid var(--color-border-tertiary);padding:9px 20px;border-radius:4px;font-size:13px;cursor:pointer;color:var(--color-text-secondary);">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
     <div id="status" class="section">
-      <div style="font-size:18px;font-weight:500;margin-bottom:1.25rem;">My order status</div>
+      <div style="font-size:18px;font-weight:500;margin-bottom:1.25rem;">My Work Pipelines</div>
       <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
-        <button class="filter-btn active-filter" onclick="filterOrders('all',this)">All Listings</button>
-        <button class="filter-btn" onclick="filterOrders('pending',this)">Pending Execution</button>
-        <button class="filter-btn" onclick="filterOrders('completed',this)">Completed Pipeline</button>
+        <button class="filter-btn active-filter" onclick="filterOrders('all',this)">All Work Orders</button>
+        <button class="filter-btn" onclick="filterOrders('pending',this)">Pending</button>
+        <button class="filter-btn" onclick="filterOrders('completed',this)">Completed</button>
       </div>
 
-      <div id="order-rows" style="display:flex;flex-direction:column;">
+      <div id="order-rows" style="display:flex;flex-direction:column;gap:10px;">
         <?php
-        $status_query = $conn->query("SELECT o.orderId, o.status, g.title, u.fullname as student_name, g.price FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.student_id = u.id WHERE o.client_id = '$client_id' ORDER BY o.orderId DESC");
-        if ($status_query && $status_query->num_rows > 0) {
-            while($row = $status_query->fetch_assoc()) {
+        $status_stmt = $pdo->prepare("SELECT o.orderId, o.status, g.title, u.fullname as client_name, g.price FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.client_id = u.id WHERE o.student_id = ? ORDER BY o.orderId DESC");
+        $status_stmt->execute([$student_id]);
+        $orders = $status_stmt->fetchAll();
+
+        if (!empty($orders)) {
+            foreach ($orders as $row) {
                 $orderId = $row['orderId'];
                 $badge = ($row['status'] === 'pending') ? 'badge-pending' : 'badge-completed';
                 $progress_width = ($row['status'] === 'pending') ? '45%' : '100%';
                 $progress_color = ($row['status'] === 'pending') ? '#1D9E75' : '#0F6E56';
                 ?>
-                <div class="order-row" id="order-row-<?php echo $orderId; ?>" data-status="<?php echo $row['status']; ?>" style="margin-bottom:10px;">
-                    <div style="border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; background: var(--color-background-secondary);">
-                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div class='order-row-container' id='order-row-<?php echo $orderId; ?>' data-status='<?php echo $row['status']; ?>'>
+                    <div style='border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; background: var(--color-background-secondary);'>
+                        <div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'>
                             <div>
-                                <div style="font-size:14px;font-weight:500;"><?php echo htmlspecialchars($row['title']); ?></div>
-                                <div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px;">Developer Relation: <?php echo htmlspecialchars($row['student_name']); ?></div>
+                                <div style='font-size:14px;font-weight:500;'><?php echo htmlspecialchars($row['title']); ?></div>
+                                <div style='font-size:12px;color:var(--color-text-secondary);margin-top:2px;'>Client: <?php echo htmlspecialchars($row['client_name']); ?></div>
                             </div>
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <span style="font-size:13px;font-weight:500;">Rs. <?php echo number_format($row['price']); ?></span>
-                                <span class="badge <?php echo $badge; ?>"><?php echo ucfirst($row['status']); ?></span>
+                            <div style='display:flex;align-items:center;gap:12px;'>
+                                <span style='font-size:13px;font-weight:500;'>Rs. <?php echo number_format($row['price']); ?></span>
+                                <span class='badge <?php echo $badge; ?>'><?php echo ucfirst($row['status']); ?></span>
                                 <button id="chat-btn-<?php echo $orderId; ?>" onclick="toggleChat(<?php echo $orderId; ?>)" class="filter-btn" style="display:flex; align-items:center; gap:6px; font-weight:500; height:32px; padding:0 12px; border-color:rgba(16, 185, 129, 0.25); color: #10b981; background: rgba(16, 185, 129, 0.05);">
                                     <i class="ti ti-message"></i> Open Chat
                                 </button>
                             </div>
                         </div>
-                        <div style="margin-top:10px;">
-                            <div style="background:var(--color-background-primary);border-radius:20px;height:6px;overflow:hidden;">
-                                <div style="width:<?php echo $progress_width; ?>;height:100%;background:<?php echo $progress_color; ?>;border-radius:20px;"></div>
+                        <div style='margin-top:10px;'>
+                            <div style='background:var(--color-background-primary);border-radius:20px;height:6px;overflow:hidden;'>
+                                <div style='width:<?php echo $progress_width; ?>;height:100%;background:<?php echo $progress_color; ?>;border-radius:20px;'></div>
                             </div>
                         </div>
 
+                        <!-- 2. Frontend UI Panel Component (Embedded Order Messages Box) -->
                         <div id="chat-box-<?php echo $orderId; ?>" class="chat-container" style="display:none;">
                             <div class="chat-header">
                                 <i class="ti ti-brand-hipchat" style="color:#1D9E75; font-size:16px;"></i>
-                                <span>Order Discussion Panel with <strong><?php echo htmlspecialchars($row['student_name']); ?></strong></span>
+                                <span>Order Discussion Panel with <strong><?php echo htmlspecialchars($row['client_name']); ?></strong></span>
                             </div>
                             
+                            <!-- History box of previous messages -->
                             <div class="chat-history">
                                 <?php
-                                $msg_stmt = $pdo->prepare("
-                                    SELECT om.id, om.sender_id, om.message, om.file_path, om.sent_at, u.fullname 
-                                    FROM order_messages om 
-                                    JOIN users u ON om.sender_id = u.id 
-                                    WHERE om.order_id = ? AND om.deleted_by_client = 0
-                                    ORDER BY om.sent_at ASC
-                                ");
-                                $msg_stmt->execute([$orderId]);
-                                $chat_history = $msg_stmt->fetchAll();
+                                 $msg_stmt = $pdo->prepare("
+                                     SELECT om.id, om.sender_id, om.message, om.file_path, om.sent_at, u.fullname 
+                                     FROM order_messages om 
+                                     JOIN users u ON om.sender_id = u.id 
+                                     WHERE om.order_id = ? AND om.deleted_by_student = 0
+                                     ORDER BY om.sent_at ASC
+                                 ");
+                                 $msg_stmt->execute([$orderId]);
+                                 $chat_history = $msg_stmt->fetchAll();
 
-                                if (!empty($chat_history)) {
-                                    foreach ($chat_history as $msg) {
-                                        $is_current_user = (intval($msg['sender_id']) === $client_id);
-                                        $bubble_class = $is_current_user ? 'chat-bubble-sent' : 'chat-bubble-received';
-                                        $meta_class = $is_current_user ? 'bubble-meta-sent' : 'bubble-meta-received';
-                                        $formatted_time = date('M d, g:i A', strtotime($msg['sent_at']));
-                                        
-                                        if ($is_current_user) {
-                                            $menu_options = '
-                                                <button onclick="editMessageInline(' . $msg['id'] . ')"><i class="ti ti-edit"></i> Edit</button>
-                                                <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete</button>
-                                            ';
-                                        } else {
-                                            $menu_options = '
-                                                <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete for Me</button>
-                                            ';
-                                        }
-                                        ?>
-                                        <div class="chat-bubble <?php echo $bubble_class; ?>" data-msg-id="<?php echo $msg['id']; ?>">
-                                            <div style="font-weight: 600; font-size: 11px; color: <?php echo $is_current_user ? '#34d399' : 'var(--color-text-secondary)'; ?>;">
-                                                <?php echo htmlspecialchars($msg['fullname']); ?>
-                                            </div>
-                                            
-                                            <div class="bubble-menu-container">
-                                                <button class="bubble-menu-btn" onclick="toggleBubbleMenu(event, <?php echo $msg['id']; ?>)">
-                                                    <i class="ti ti-dots-vertical"></i>
-                                                </button>
-                                                <div class="bubble-menu-dropdown" id="bubble-dropdown-<?php echo $msg['id']; ?>">
-                                                    <?php echo $menu_options; ?>
-                                                </div>
-                                            </div>
+                                 if (!empty($chat_history)) {
+                                     foreach ($chat_history as $msg) {
+                                         $is_current_user = (intval($msg['sender_id']) === $student_id);
+                                         $bubble_class = $is_current_user ? 'chat-bubble-sent' : 'chat-bubble-received';
+                                         $meta_class = $is_current_user ? 'bubble-meta-sent' : 'bubble-meta-received';
+                                         $formatted_time = date('M d, g:i A', strtotime($msg['sent_at']));
+                                         
+                                         if ($is_current_user) {
+                                             $menu_options = '
+                                                 <button onclick="editMessageInline(' . $msg['id'] . ')"><i class="ti ti-edit"></i> Edit</button>
+                                                 <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete</button>
+                                             ';
+                                         } else {
+                                             $menu_options = '
+                                                 <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete for Me</button>
+                                             ';
+                                         }
+                                         ?>
+                                         <div class="chat-bubble <?php echo $bubble_class; ?>" data-msg-id="<?php echo $msg['id']; ?>">
+                                             <div style="font-weight: 600; font-size: 11px; color: <?php echo $is_current_user ? '#34d399' : 'var(--color-text-secondary)'; ?>;">
+                                                 <?php echo htmlspecialchars($msg['fullname']); ?>
+                                             </div>
+                                             
+                                             <div class="bubble-menu-container">
+                                                 <button class="bubble-menu-btn" onclick="toggleBubbleMenu(event, <?php echo $msg['id']; ?>)">
+                                                     <i class="ti ti-dots-vertical"></i>
+                                                 </button>
+                                                 <div class="bubble-menu-dropdown" id="bubble-dropdown-<?php echo $msg['id']; ?>">
+                                                     <?php echo $menu_options; ?>
+                                                 </div>
+                                             </div>
 
-                                            <?php if (!empty($msg['message'])): ?>
-                                                <div class="message-text" style="word-break: break-word; white-space: pre-wrap;"><?php echo htmlspecialchars($msg['message']); ?></div>
-                                            <?php endif; ?>
-                                            <?php if (!empty($msg['file_path'])): 
-                                                $filename = basename($msg['file_path']);
-                                            ?>
-                                                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
-                                                    <a href="<?php echo htmlspecialchars($msg['file_path']); ?>" download class="attachment-btn" style="color: #10b981; text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-                                                        <i class="ti ti-download"></i> Download <?php echo htmlspecialchars($filename); ?>
-                                                    </a>
-                                                </div>
-                                            <?php endif; ?>
-                                            <div class="bubble-meta <?php echo $meta_class; ?>">
-                                                <span><?php echo $formatted_time; ?></span>
-                                            </div>
-                                        </div>
-                                        <?php
-                                    }
-                                } else {
-                                    echo "<div class='no-messages' style='text-align:center; padding: 2rem 0; color:var(--color-text-secondary); font-size: 13px;'>
-                                            <i class='ti ti-messages' style='font-size: 24px; color:#1D9E75; display:block; margin-bottom: 6px;'></i>
-                                            No messages yet. Send a query to start discussing.
-                                          </div>";
-                                }
+                                             <?php if (!empty($msg['message'])): ?>
+                                                 <div class="message-text" style="word-break: break-word; white-space: pre-wrap;"><?php echo htmlspecialchars($msg['message']); ?></div>
+                                             <?php endif; ?>
+                                             <?php if (!empty($msg['file_path'])): 
+                                                 $filename = basename($msg['file_path']);
+                                             ?>
+                                                 <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                                                     <a href="<?php echo htmlspecialchars($msg['file_path']); ?>" download class="attachment-btn" style="color: #10b981; text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+                                                         <i class="ti ti-download"></i> Download <?php echo htmlspecialchars($filename); ?>
+                                                     </a>
+                                                 </div>
+                                             <?php endif; ?>
+                                             <div class="bubble-meta <?php echo $meta_class; ?>">
+                                                 <span><?php echo $formatted_time; ?></span>
+                                             </div>
+                                         </div>
+                                         <?php
+                                     }
+                                 } else {
+                                     echo "<div class='no-messages' style='text-align:center; padding: 2rem 0; color:var(--color-text-secondary); font-size: 13px;'>
+                                             <i class='ti ti-messages' style='font-size: 24px; color:#1D9E75; display:block; margin-bottom: 6px;'></i>
+                                             No messages yet. Send a query to start discussing.
+                                           </div>";
+                                 }   
                                 ?>
                             </div>
 
@@ -1198,12 +1114,13 @@ if (!empty($msg_status)):
                                 </button>
                             </form>
                         </div>
+
                     </div>
                 </div>
                 <?php
             }
         } else {
-            echo "<p style='color:var(--color-text-secondary);'>No registered transactional pipeline records tracked.</p>";
+            echo "<p style='color:var(--color-text-secondary);'>No received pipeline work orders assigned yet.</p>";
         }
         ?>
       </div>
