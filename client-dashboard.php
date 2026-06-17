@@ -466,28 +466,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])
         <?php
         $status_query = $conn->query("SELECT o.orderId, o.status, g.title, u.fullname as student_name, g.price FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.student_id = u.id WHERE o.client_id = '$client_id' ORDER BY o.orderId DESC");
         if ($status_query && $status_query->num_rows > 0) {
-            while($row = $status_query->fetch_assoc()) {
-                $badge = ($row['status'] === 'pending') ? 'badge-pending' : 'badge-completed';
-                $progress_width = ($row['status'] === 'pending') ? '45%' : '100%';
-                $progress_color = ($row['status'] === 'pending') ? '#1D9E75' : '#0F6E56';
+            while ($row = $status_query->fetch_assoc()) {
+                $progress_width = '0%';
+                $progress_color = '#e2e8f0';
+                $badge = 'badge-pending';
+                
+                if ($row['status'] === 'pending') {
+                    $progress_width = '25%';
+                    $progress_color = '#6366f1';
+                    $badge = 'badge-pending';
+                } elseif ($row['status'] === 'in_progress') {
+                    $progress_width = '60%';
+                    $progress_color = '#3b82f6';
+                    $badge = 'badge-progress';
+                } elseif ($row['status'] === 'completed' || $row['status'] === 'pending_payment') {
+                    $progress_width = '100%';
+                    $progress_color = '#10b981';
+                    $badge = 'badge-completed';
+                } elseif ($row['status'] === 'paid') {
+                    $progress_width = '100%';
+                    $progress_color = '#10b981';
+                    $badge = 'badge-completed';
+                }
 
-                echo "<div class='order-row' data-status='{$row['status']}' style='border:1px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem 1.5rem; background: var(--color-background-secondary); box-shadow: var(--shadow-sm);'>
-                        <div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;'>
-                            <div>
-                                <div style='font-size:15px;font-weight:600;color:var(--color-text-primary);'>{$row['title']}</div>
-                                <div style='font-size:12.5px;color:var(--color-text-secondary);margin-top:2px;font-weight:500;'>Developer Relation: {$row['student_name']}</div>
-                            </div>
-                            <div style='display:flex;align-items:center;gap:16px;'>
-                                <span style='font-size:15px;font-weight:600;color:var(--color-text-primary);'>Rs. " . number_format($row['price']) . "</span>
-                                <span class='badge {$badge}'>" . ucfirst($row['status']) . "</span>
-                            </div>
+                // Determine the correct action button based on payment status
+                $action_button = '';
+                if ($row['status'] === 'completed' || $row['status'] === 'pending_payment') {
+                    $action_button = '<a href="payment.php?order_id=' . urlencode($row['orderId']) . '">
+                                        <button class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px;">Pay Now</button>
+                                      </a>';
+                } else if ($row['status'] === 'paid') {
+                    $action_button = '<button class="btn btn-primary" style="opacity: 0.5; cursor: not-allowed; padding: 6px 14px; font-size: 0.85rem; border-radius: 8px;" disabled>Paid</button>';
+                }
+?>
+                <div class='pipeline-card' style='background:var(--color-surface-primary);border:1px solid var(--color-border-primary);border-radius:24px;padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px;'>
+                    <div style='display:flex;justify-content:between;align-items:center;gap:16px;flex-wrap:wrap;'>
+                        <div style='flex:1;'>
+                            <h4 style='font-size:16px;font-weight:600;color:var(--color-text-primary);margin-bottom:4px;'><?php echo htmlspecialchars($row['title']); ?></h4>
+                            <p style='font-size:13px;color:var(--color-text-secondary);'>Order ID: #<?php echo htmlspecialchars($row['orderId']); ?></p>
                         </div>
-                        <div style='margin-top:14px;'>
-                            <div style='background:var(--color-background-primary);border-radius:20px;height:7px;overflow:hidden;'>
-                                <div style='width:{$progress_width};height:100%;background:{$progress_color};border-radius:20px;'></div>
-                            </div>
+                        <div style='display:flex;align-items:center;gap:14px;'>
+                            <span style='font-size:15px;font-weight:600;color:var(--color-text-primary);'>Rs. <?php echo number_format($row['price'], 2); ?></span>
+                            <span class='badge <?php echo $badge; ?>'><?php echo ucfirst($row['status']); ?></span>
+                            <?php echo $action_button; ?>                                
+                        </div>  
+                    </div>
+                    <div style='margin-top:14px;'>
+                        <div style='background:var(--color-background-primary);border-radius:20px;height:7px;overflow:hidden;'>
+                            <div style='width:<?php echo $progress_width; ?>;height:100%;background:<?php echo $progress_color; ?>;border-radius:20px;'></div>
                         </div>
-                      </div>";
+                    </div>
+                </div>
+<?php
             }
         } else {
             echo "<p style='color:var(--color-text-secondary);text-align:center;padding:20px;font-weight:500;'>No registered transactional pipeline records tracked.</p>";
