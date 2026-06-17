@@ -1,5 +1,10 @@
 <?php
-// index.php — Student Freelancer Platform
+
+include 'includes/db.php';
+
+$search_query = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+$category_filter = isset($_GET['category']) ? $conn->real_escape_string($_GET['category']) : '';
+
 $stats = [
     ["value" => "500",  "suffix" => "+",   "label" => "Active Students"],
     ["value" => "1200", "suffix" => "+",   "label" => "Jobs Completed"],
@@ -11,11 +16,20 @@ $categories = [
     ["icon" => "✍️", "title" => "Writing",       "desc" => "Content, Copy & Research",       "count" => "76 gigs"],
     ["icon" => "🎓", "title" => "Tutoring",      "desc" => "Academic help & Skill sharing",  "count" => "54 gigs"],
 ];
-$featured = [
-    ["name" => "Aisha R.", "uni" => "MIT",        "skill" => "React Developer",     "rate" => "$28/hr", "rating" => 4.9, "jobs" => 34, "tags" => ["React","Node.js","Firebase"]],
-    ["name" => "Carlos M.", "uni" => "Stanford",   "skill" => "UI/UX Designer",      "rate" => "$22/hr", "rating" => 5.0, "jobs" => 21, "tags" => ["Figma","Tailwind","Framer"]],
-    ["name" => "Priya S.",  "uni" => "Oxford",     "skill" => "Content Strategist",  "rate" => "$18/hr", "rating" => 4.8, "jobs" => 47, "tags" => ["SEO","Copy","Research"]],
-];
+$featured_query = "
+    SELECT u.id, u.fullname, u.profile_pic, sp.university_name, sp.faculty, sp.department, sp.club_affiliations,
+           (SELECT COUNT(*) FROM orders WHERE student_id = u.id AND status = 'completed') as jobs_completed,
+           (SELECT MIN(price) FROM gigs WHERE student_id = u.id) as min_rate
+    FROM users u
+    JOIN student_profiles sp ON u.id = sp.user_id
+    WHERE u.role = 'student' AND u.status = 'active'
+    ORDER BY u.created_at DESC
+    LIMIT 10
+";
+
+$featured_result = $conn->query($featured_query);
+
+
 $steps = [
     ["n"=>"01","icon"=>"🔍","title"=>"Post a Job",        "desc"=>"Describe your project, timeline, and budget in under 2 minutes."],
     ["n"=>"02","icon"=>"🤝","title"=>"Match with Talent",  "desc"=>"Browse verified student profiles and connect with the perfect fit."],
@@ -83,25 +97,26 @@ $steps = [
 
 <!-- ── SEARCH ── -->
 <div class="search-section">
-  <div class="search-bar">
-    <input type="text" placeholder='Try "React developer", "logo design", "Python tutor"…'/>
+  <form action="jobs.php" method="GET" class="search-bar">
+    <input type="text" name="search" placeholder='Try "React developer", "logo design", "Python tutor"…'/>
     <div class="search-divider"></div>
-    <select class="search-cat">
-      <option>All Categories</option>
-      <option>Development</option>
-      <option>Design</option>
-      <option>Writing</option>
-      <option>Tutoring</option>
+    <select name="category" class="search-cat">
+      <option value="">All Categories</option>
+      <option value="development">Development</option>
+      <option value="design">Design</option>
+      <option value="writing">Writing</option>
+      <option value="tutoring">Tutoring</option>
     </select>
-    <a href="jobs.php" class="btn btn-primary">Search</a>
-  </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+  
   <div class="search-tags">
     <span>Popular:</span>
-    <span class="search-tag">React</span>
-    <span class="search-tag">Logo Design</span>
-    <span class="search-tag">WordPress</span>
-    <span class="search-tag">Python</span>
-    <span class="search-tag">SEO Writing</span>
+    <a href="jobs.php?search=React" class="search-tag" style="text-decoration:none;">React</a>
+    <a href="jobs.php?search=Logo Design" class="search-tag" style="text-decoration:none;">Logo Design</a>
+    <a href="jobs.php?search=WordPress" class="search-tag" style="text-decoration:none;">WordPress</a>
+    <a href="jobs.php?search=Python" class="search-tag" style="text-decoration:none;">Python</a>
+    <a href="jobs.php?search=SEO" class="search-tag" style="text-decoration:none;">SEO Writing</a>
   </div>
 </div>
 
@@ -115,7 +130,7 @@ $steps = [
     </div>
     <div class="cat-grid">
       <?php foreach($categories as $i=>$c): ?>
-      <a href="jobs.php?cat=<?= strtolower($c['title']) ?>" style="display:block;text-decoration:none;color:inherit;">
+      <a href="jobs.php?category=<?= urlencode(strtolower($c['title'])) ?>" style="display:block;text-decoration:none;color:inherit;">
         <div class="cat-card reveal" style="transition-delay:<?= $i*0.08 ?>s">
           <div class="cat-emoji"><?= $c['icon'] ?></div>
           <h3><?= $c['title'] ?></h3>
@@ -148,32 +163,68 @@ $steps = [
       <h2 class="sec-title">Featured Freelancers</h2>
       <p class="sec-sub">Hand-picked student experts ready to take on your next project.</p>
     </div>
+    
     <div class="freelancer-grid">
-      <?php foreach($featured as $i=>$f): ?>
+      <?php 
+      if ($featured_result && $featured_result->num_rows > 0): 
+        $i = 0;
+        while($f = $featured_result->fetch_assoc()): 
+          // Tags සකසා ගැනීම (Department සහ Faculty එක එකතු කර)
+          $tags = array_filter([$f['department'], $f['faculty']]);
+          if(!empty($f['club_affiliations'])) {
+              $clubs = explode(',', $f['club_affiliations']);
+              $tags = array_merge($tags, array_slice($clubs, 0, 2)); // උපරිම ක්ලබ් 2ක් පමණක් ටැග් වලට ගනී
+          }
+          
+          // මිල ගණන් සහ ජොබ්ස් ගණන නිවැරදිව සැකසීම
+          $rate_display = ($f['min_rate'] > 0) ? "Rs. " . number_format($f['min_rate']) : "Flexible";
+          $jobs_count = $f['jobs_completed'] ? $f['jobs_completed'] : 0;
+          $initial = mb_substr($f['fullname'], 0, 1);
+      ?>
       <div class="fl-card reveal" style="transition-delay:<?= $i*0.1 ?>s">
         <div class="fl-top">
-          <div class="fl-av"><?= mb_substr($f['name'],0,1) ?>👤</div>
+          <div class="fl-av">
+            <?php if($f['profile_pic'] !== 'default.png'): ?>
+                <img src="uploads/<?= $f['profile_pic'] ?>" alt="<?= $f['fullname'] ?>" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+            <?php else: ?>
+                <?= $initial ?>👤
+            <?php endif; ?>
+          </div>
           <div class="fl-info">
-            <h4><?= $f['name'] ?></h4>
-            <div class="fl-uni">🎓 <?= $f['uni'] ?> · <?= $f['skill'] ?></div>
-            <div class="fl-rating"><span class="st">★</span> <?= $f['rating'] ?> (<?= $f['jobs'] ?> jobs)</div>
+            <h4><?= htmlspecialchars($f['fullname']) ?></h4>
+            <div class="fl-uni">🎓 <?= htmlspecialchars($f['university_name']) ?></div>
+            <div class="fl-rating"><span class="st">★</span> 4.9 (<?= $jobs_count ?> jobs)</div>
           </div>
         </div>
         <div class="fl-tags">
-          <?php foreach($f['tags'] as $t): ?>
-          <span class="fl-tag"><?= $t ?></span>
+          <?php foreach($tags as $t): ?>
+          <span class="fl-tag"><?= htmlspecialchars(trim($t)) ?></span>
           <?php endforeach; ?>
         </div>
         <div class="fl-footer">
           <div>
-            <div class="fl-rate"><?= $f['rate'] ?></div>
-            <div class="fl-jobs"><?= $f['jobs'] ?> jobs completed</div>
+            <div class="fl-rate"><?= $rate_display ?></div>
+            <div class="fl-jobs"><?= $jobs_count ?> jobs completed</div>
           </div>
-          <button class="btn-line">View Profile</button>
+          <a href="profile.php?id=<?= $f['id'] ?>" class="btn-line" style="text-decoration: none; text-align: center;">View Profile</a>
         </div>
       </div>
-      <?php endforeach; ?>
+      <?php 
+        $i++;
+        endwhile; 
+      else:
+      ?>
+        <p style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No featured student experts found active.</p>
+      <?php endif; ?>
     </div>
+
+    <!-- ── SHOW MORE BUTTON ── -->
+    <div style="text-align: center; margin-top: 3.5rem;">
+        <a href="jobs.php" class="btn-line" style="display: inline-block; padding: 12px 36px; text-decoration: none; font-weight: 600; font-size: 14.5px; transition: all 0.3s;">
+            Show More <i class="ti ti-arrow-right" style="vertical-align: middle; margin-left: 4px;"></i>
+        </a>
+    </div>
+
   </div>
 </section>
 
@@ -205,7 +256,6 @@ $steps = [
     <p>Join hundreds of clients and students already thriving on UniGigs. Post your first job — it's free.</p>
     <div class="cta-btns">
       <a href="jobs.php" class="btn btn-primary">Browse All Gigs ↗</a>
-      <a href="register.php" class="btn btn-ghost">Post a Job</a>
     </div>
   </div>
 </section>

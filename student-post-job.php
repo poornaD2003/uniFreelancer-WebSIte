@@ -100,7 +100,7 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
             <?php else: ?>
                 <div class="step-progress"><div class="step-wrapper"><div class="step-bubble done">✓</div><div class="step-label">Basic Info</div></div><div class="step-line" style="opacity:.7;"></div><div class="step-wrapper"><div class="step-bubble active">2</div><div class="step-label">Description</div></div></div>
                 <div class="section-header"><i class="fas fa-align-left"></i> Step 2: Description</div>
-                <form method="POST" action="student-post-job.php">
+                <form method="POST" action="student-post-job.php" enctype="multipart/form-data">
                     <input type="hidden" name="title" value="<?php echo htmlspecialchars($temp_title); ?>">
                     <input type="hidden" name="category" value="<?php echo htmlspecialchars($temp_category); ?>">
                     <input type="hidden" name="price" value="<?php echo htmlspecialchars($temp_price); ?>">
