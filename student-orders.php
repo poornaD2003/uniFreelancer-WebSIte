@@ -222,6 +222,8 @@ $open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
         <a href="student-dashboard.php"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="student-post-job.php"><i class="fas fa-briefcase"></i> Post Gig</a>
         <a href="student-orders.php" class="active"><i class="fas fa-shopping-basket"></i> Orders</a>
+        <a href="my-gigs.php"><i class="fas fa-tasks"></i> My Reviews</a>
+
     </nav></aside>
     <main class="main">
         <h1>Manage Client Orders</h1>
