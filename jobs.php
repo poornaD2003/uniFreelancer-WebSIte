@@ -2,147 +2,841 @@
 include 'includes/db.php';
 include 'includes/header.php';
 
-// Fetch jobs from database with filtering
-$query = "SELECT j.*, u.fullname as client_name FROM gigs j JOIN users u ON j.student_id = u.id WHERE j.status = 'approve'";
-$params = [];
+// 1. Get Search, Filter, and Sort values from URL
+$search_query    = isset($_GET['search'])   ? $conn->real_escape_string($_GET['search'])   : '';
+$category_filter = isset($_GET['category']) ? $conn->real_escape_string($_GET['category']) : '';
+$sort_option     = isset($_GET['sort'])     ? $_GET['sort']     : 'recent';
+$min_price       = isset($_GET['min_price']) && is_numeric($_GET['min_price']) ? (float)$_GET['min_price'] : '';
+$max_price       = isset($_GET['max_price']) && is_numeric($_GET['max_price']) ? (float)$_GET['max_price'] : '';
 
-if (!empty($_GET['search'])) {
-    $query .= " AND (j.title LIKE ? OR j.description LIKE ?)";
-    $search_term = "%" . $_GET['search'] . "%";
-    $params[] = $search_term;
-    $params[] = $search_term;
+// 2. Build dynamic SQL
+$sql_conditions = "j.status = 'approve'";
+
+if (!empty($search_query)) {
+    $sql_conditions .= " AND (j.title LIKE '%$search_query%' OR j.description LIKE '%$search_query%')";
+}
+if (!empty($category_filter)) {
+    $sql_conditions .= " AND j.category = '$category_filter'";
+}
+if ($min_price !== '') {
+    $sql_conditions .= " AND j.price >= $min_price";
+}
+if ($max_price !== '') {
+    $sql_conditions .= " AND j.price <= $max_price";
 }
 
-if (!empty($_GET['category']) && $_GET['category'] !== 'all') {
-    $query .= " AND j.category = ?";
-    $params[] = $_GET['category'];
-}
+$order_by = "j.created_at DESC";
+if ($sort_option === 'price_asc')  $order_by = "j.price ASC";
+if ($sort_option === 'price_desc') $order_by = "j.price DESC";
 
-if (!empty($_GET['min_price'])) {
-    $query .= " AND j.price >= ?";
-    $params[] = (float)$_GET['min_price'];
-}
+$query    = "SELECT j.*, u.fullname as student_name FROM gigs j JOIN users u ON j.student_id = u.id WHERE $sql_conditions ORDER BY $order_by";
+$result   = $conn->query($query);
+$jobCount = $result ? $result->num_rows : 0;
 
-if (!empty($_GET['max_price'])) {
-    $query .= " AND j.price <= ?";
-    $params[] = (float)$_GET['max_price'];
-}
-
-$sort = $_GET['sort'] ?? 'newest';
-if ($sort === 'price_asc') {
-    $query .= " ORDER BY j.price ASC";
-} elseif ($sort === 'price_desc') {
-    $query .= " ORDER BY j.price DESC";
-} else {
-    $query .= " ORDER BY j.created_at DESC";
-}
-
-$stmt = $pdo->prepare($query);
-$stmt->execute($params);
-$jobs = $stmt->fetchAll();
+// Category display name
+$category_labels = [
+    ''            => 'All Services',
+    'design'      => 'Design & Creative',
+    'development' => 'Programming & Tech',
+    'writing'     => 'Writing & Translation',
+];
+$hero_title = $category_labels[$category_filter] ?? 'Browse Gigs';
 ?>
 
-<section style="padding: 150px 5% 50px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
-        <div>
-            <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Available Gigs</h1>
-            <p style="color: var(--text-muted);">Browse the latest freelance opportunities for students.</p>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+/* ── Reset & tokens ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+:root {
+    --hero-bg:      #1a4a3a;
+    --hero-blob1:   #e8c97a;
+    --hero-blob2:   #d4856a;
+    --accent:       #10b981;
+    --accent-soft:  rgba(16,185,129,.1);
+    --green-accent: #10b981;
+    --text-dark:    #1a1a2e;
+    --text-muted:   #6b7280;
+    --border:       #e5e7eb;
+    --bg:           #f9fafb;
+    --white:        #ffffff;
+    --card-radius:  12px;
+    --star:         #f59e0b;
+}
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text-dark);
+    margin: 0;
+}
+
+/* ── CATEGORY HERO BANNER ───────────────────────────────── */
+.cat-hero {
+    margin-top: 70px; /* header offset */
+    background: var(--hero-bg);
+    border-radius: 0 0 0 0;
+    overflow: hidden;
+    position: relative;
+    height: 220px;
+    display: flex;
+    align-items: center;
+}
+
+.hero-blob-yellow {
+    position: absolute;
+    left: 0; top: 0;
+    width: 160px; height: 160px;
+    background: var(--hero-blob1);
+    border-radius: 50%;
+    transform: translate(-50%, -30%);
+    opacity: .85;
+}
+
+.hero-blob-coral {
+    position: absolute;
+    right: 260px; bottom: -30px;
+    width: 180px; height: 180px;
+    background: var(--hero-blob2);
+    border-radius: 50%;
+    opacity: .7;
+}
+
+.hero-text {
+    position: relative;
+    z-index: 2;
+    padding: 0 60px;
+    flex: 1;
+}
+
+.hero-breadcrumb {
+    font-size: 13px;
+    color: rgba(255,255,255,.55);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.hero-breadcrumb a { color: rgba(255,255,255,.55); text-decoration: none; }
+.hero-breadcrumb a:hover { color: rgba(255,255,255,.85); }
+.hero-breadcrumb span { color: rgba(255,255,255,.3); }
+
+.hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 10px;
+    line-height: 1.1;
+}
+
+.hero-sub {
+    color: rgba(255,255,255,.6);
+    font-size: 14px;
+    margin: 0 0 18px;
+}
+
+.hero-play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 30px;
+    text-decoration: none;
+    transition: background .2s;
+    cursor: pointer;
+}
+.hero-play-btn:hover { background: rgba(255,255,255,.2); }
+.play-circle {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,.9);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--hero-bg);
+    font-size: 10px;
+}
+
+/* ── TOP CATEGORY NAV STRIP ─────────────────────────────── */
+.cat-nav-strip {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.cat-nav-strip::-webkit-scrollbar { display: none; }
+.cat-nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+.cat-nav-link {
+    white-space: nowrap;
+    padding: 14px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+}
+.cat-nav-link:hover { color: var(--text-dark); }
+.cat-nav-link.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+
+/* ── PAGE LAYOUT ────────────────────────────────────────── */
+.page-body {
+    max-width: 1280px;
+    margin: 32px auto 80px;
+    padding: 0 24px;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+}
+
+/* ── SIDEBAR ────────────────────────────────────────────── */
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 90px;
+}
+
+.filter-block {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+}
+
+.filter-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.filter-chevron {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: transform .2s;
+}
+.filter-chevron.open { transform: rotate(180deg); }
+
+.filter-body { padding: 12px 16px; }
+
+/* Radio / Checkbox rows */
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+}
+.filter-row:not(:last-child) { border-bottom: 1px solid #f3f4f6; }
+
+.filter-row label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+}
+.filter-row label input[type="radio"],
+.filter-row label input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--green-accent);
+    cursor: pointer;
+}
+.filter-count {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Budget price inputs */
+.budget-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.budget-input-wrap {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.budget-input-wrap label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    display: block;
+    margin-bottom: 3px;
+}
+.budget-input-wrap input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+}
+
+.range-slider-wrap { margin: 4px 0 8px; }
+.range-slider {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--green-accent);
+    cursor: pointer;
+}
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+/* ── MAIN CONTENT ───────────────────────────────────────── */
+.main-content { flex: 1; min-width: 0; }
+
+/* Results bar */
+.results-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+.results-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+.results-count strong { color: var(--text-dark); }
+
+.sort-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.sort-select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 30px 7px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E") no-repeat right 10px center;
+    appearance: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+}
+.sort-select:focus { outline: none; border-color: var(--accent); }
+
+/* ── GIG CARD GRID ──────────────────────────────────────── */
+.gig-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 1100px) { .gig-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 750px)  { .gig-grid { grid-template-columns: 1fr; } }
+
+/* Card */
+.gig-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    transition: transform .22s, box-shadow .22s;
+    display: flex;
+    flex-direction: column;
+}
+.gig-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.08);
+}
+
+/* Cover image */
+.card-img-wrap {
+    position: relative;
+    overflow: hidden;
+    height: 190px;
+}
+.card-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .3s;
+}
+.gig-card:hover .card-cover { transform: scale(1.04); }
+
+.heart-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 32px; height: 32px;
+    background: var(--white);
+    border: none;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #9ca3af;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    transition: color .2s, transform .2s;
+}
+.heart-btn:hover { color: #ef4444; transform: scale(1.1); }
+
+/* Card body */
+.card-body {
+    padding: 14px 16px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-category {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 6px;
+}
+
+.card-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-dark);
+    line-height: 1.45;
+    margin: 0 0 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+/* Stars */
+.card-rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 12px;
+    font-size: 12px;
+}
+.stars { color: var(--star); font-size: 12px; }
+.rating-num { font-weight: 700; color: var(--text-dark); }
+.rating-count { color: var(--text-muted); }
+
+/* Card footer: avatar + seller + price */
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+}
+
+.seller-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.seller-av {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+
+.seller-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+.seller-name .verified {
+    color: #3b82f6;
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+.card-price {
+    text-align: right;
+}
+.price-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    display: block;
+}
+.price-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+/* ── EMPTY STATE ────────────────────────────────────────── */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+}
+.empty-state i { font-size: 48px; color: #d1d5db; margin-bottom: 16px; display: block; }
+.empty-state h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.empty-state p  { color: var(--text-muted); font-size: 14px; }
+
+/* ── SEARCH BAR (top, inside hero or below) ─────────────── */
+.search-form-wrap {
+    background: #fff;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+}
+.search-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.search-input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f9fafb;
+    transition: border-color .2s;
+}
+.search-input-wrap:focus-within { border-color: var(--accent); background: #fff; }
+.search-input-wrap i { padding: 0 12px; color: var(--text-muted); font-size: 15px; }
+.search-input-wrap input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 0;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-dark);
+    outline: none;
+}
+.search-divider-v { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+.search-cat-select {
+    border: none;
+    background: transparent;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dark);
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+    min-width: 160px;
+}
+.btn-search {
+    padding: 10px 24px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+}
+.btn-search:hover { background: #059669; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .page-body { flex-direction: column; }
+    .sidebar { width: 100%; position: static; }
+    .cat-hero { height: auto; padding: 32px 0; }
+    .hero-text { padding: 0 24px; }
+    .hero-title { font-size: 26px; }
+}
+</style>
+
+<?php
+// Category nav links
+$categories = [
+    ''            => 'All Categories',
+    'design'      => 'Design & Creative',
+    'development' => 'Programming & Tech',
+    'writing'     => 'Writing & Translation',
+    'video'       => 'Video & Animation',
+    'music'       => 'Music & Audio',
+    'business'    => 'Business',
+];
+?>
+
+<!-- ── CATEGORY HERO BANNER ──────────────────────────────── -->
+<div class="cat-hero">
+    <div class="hero-blob-yellow"></div>
+    <div class="hero-blob-coral"></div>
+    <div class="hero-text">
+        <div class="hero-breadcrumb">
+            <a href="index.php">Home</a>
+            <span>/</span>
+            <a href="jobs.php">Services</a>
+            <?php if (!empty($category_filter)): ?>
+                <span>/</span>
+                <span><?php echo $category_labels[$category_filter] ?? $category_filter; ?></span>
+            <?php endif; ?>
         </div>
-        <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'student'): ?>
-            <a href="post-gig.php" class="btn btn-primary">Post a New Gig</a>
-        <?php endif; ?>
+        <h1 class="hero-title"><?php echo $hero_title; ?></h1>
+        <p class="hero-sub">Find talented student freelancers for every project.</p>
+        <a href="student_freelancer_site.php#how" class="hero-play-btn">
+            <span class="play-circle"><i class="fas fa-play"></i></span>
+            How UniLance Works
+        </a>
     </div>
+</div>
 
-    <!-- Beautiful Glassmorphic Search & Filter Bar -->
-    <div class="card" style="margin-bottom: 2.5rem; padding: 1.5rem; border-radius: 16px; background: var(--glass-bg); backdrop-filter: blur(10px);">
-        <form method="GET" action="jobs.php" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; align-items: end;">
-            <div class="input-group" style="margin-bottom: 0;">
-                <label for="search" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-search" style="color: var(--primary);"></i> Keyword
-                </label>
-                <input type="text" id="search" name="search" placeholder="e.g. Logo Design, Website..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="background: rgba(9, 13, 22, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
-            </div>
-            
-            <div class="input-group" style="margin-bottom: 0;">
-                <label for="category" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-filter" style="color: var(--primary);"></i> Category
-                </label>
-                <select id="category" name="category" style="background: rgba(9, 13, 22, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
-                    <option value="all">All Categories</option>
-                    <option value="Development" <?php echo (isset($_GET['category']) && $_GET['category'] === 'Development') ? 'selected' : ''; ?>>Development</option>
-                    <option value="Design" <?php echo (isset($_GET['category']) && $_GET['category'] === 'Design') ? 'selected' : ''; ?>>Design</option>
-                    <option value="Writing" <?php echo (isset($_GET['category']) && $_GET['category'] === 'Writing') ? 'selected' : ''; ?>>Writing</option>
-                    <option value="Tutoring" <?php echo (isset($_GET['category']) && $_GET['category'] === 'Tutoring') ? 'selected' : ''; ?>>Tutoring</option>
-                    <option value="Other" <?php echo (isset($_GET['category']) && $_GET['category'] === 'Other') ? 'selected' : ''; ?>>Other</option>
+<!-- ── CATEGORY NAV STRIP ────────────────────────────────── -->
+<div class="cat-nav-strip">
+    <div class="cat-nav-inner">
+        <?php foreach ($categories as $val => $label): ?>
+            <a href="jobs.php?category=<?php echo urlencode($val); ?>&search=<?php echo urlencode($search_query); ?>"
+               class="cat-nav-link <?php echo ($category_filter === $val) ? 'active' : ''; ?>">
+                <?php echo $label; ?>
+            </a>
+        <?php endforeach; ?>
+        <a href="jobs.php?sort=recent&category=<?php echo urlencode($category_filter); ?>" class="cat-nav-link <?php echo ($sort_option == 'recent' && empty($search_query)) ? 'active' : ''; ?>">Trending</a>
+    </div>
+</div>
+
+<!-- ── SEARCH BAR ────────────────────────────────────────── -->
+<div class="search-form-wrap">
+    <form method="GET" action="jobs.php">
+        <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_filter); ?>">
+        <div class="search-inner">
+            <div class="search-input-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="search" placeholder="Search for any service…"
+                       value="<?php echo htmlspecialchars($search_query); ?>">
+                <span class="search-divider-v"></span>
+                <select name="category_inline" class="search-cat-select" onchange="window.location='jobs.php?category='+this.value">
+                    <?php foreach ($categories as $val => $label): ?>
+                        <option value="<?php echo $val; ?>" <?php echo ($category_filter === $val) ? 'selected' : ''; ?>>
+                            <?php echo $label; ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
+            <button type="submit" class="btn-search"><i class="fas fa-search"></i> Search</button>
+        </div>
+    </form>
+</div>
+
+<!-- ── MAIN PAGE BODY ─────────────────────────────────────── -->
+<div class="page-body">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+        <form method="GET" action="jobs.php" id="filter-form">
+            <input type="hidden" name="search"   value="<?php echo htmlspecialchars($search_query); ?>">
+            <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_filter); ?>">
+            <input type="hidden" name="sort"     value="<?php echo htmlspecialchars($sort_option); ?>">
+
             
-            <div class="input-group" style="margin-bottom: 0;">
-                <label for="min_price" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-dollar-sign" style="color: var(--primary);"></i> Min Price
-                </label>
-                <input type="number" id="min_price" name="min_price" placeholder="Min" min="0" value="<?php echo htmlspecialchars($_GET['min_price'] ?? ''); ?>" style="background: rgba(9, 13, 22, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+
+            <!-- Budget -->
+            <div class="filter-block">
+                <div class="filter-header">
+                    <span class="filter-title">Budget</span>
+                    <i class="fas fa-chevron-up filter-chevron open"></i>
+                </div>
+                <div class="filter-body">
+                    <div class="budget-inputs">
+                        <div class="budget-input-wrap">
+                            <label>Min Price</label>
+                            <input type="number" name="min_price" id="min_price_input"
+                                   value="<?php echo $min_price !== '' ? $min_price : '0'; ?>"
+                                   placeholder="0" min="0">
+                        </div>
+                        <div class="budget-input-wrap">
+                            <label>Max Price</label>
+                            <input type="number" name="max_price" id="max_price_input"
+                                   value="<?php echo $max_price !== '' ? $max_price : '10000'; ?>"
+                                   placeholder="10000" min="0">
+                        </div>
+                    </div>
+                    <div class="range-slider-wrap">
+                        <input type="range" class="range-slider" id="price_range"
+                               min="0" max="10000" step="500"
+                               value="<?php echo $max_price !== '' ? $max_price : '10000'; ?>">
+                        <div class="range-labels">
+                            <span>Rs. <?php echo number_format($min_price !== '' ? $min_price : 0); ?></span>
+                            <span>Rs. <?php echo number_format($max_price !== '' ? $max_price : 10000); ?></span>
+                        </div>
+                    </div>
+                    <button type="submit" style="width:100%;padding:8px;background:var(--green-accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;">
+                        Apply Budget
+                    </button>
+                </div>
             </div>
 
-            <div class="input-group" style="margin-bottom: 0;">
-                <label for="max_price" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-dollar-sign" style="color: var(--primary);"></i> Max Price
-                </label>
-                <input type="number" id="max_price" name="max_price" placeholder="Max" min="0" value="<?php echo htmlspecialchars($_GET['max_price'] ?? ''); ?>" style="background: rgba(9, 13, 22, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
-            </div>
-
-            <div class="input-group" style="margin-bottom: 0;">
-                <label for="sort" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-sort-amount-down" style="color: var(--primary);"></i> Sort By
-                </label>
-                <select id="sort" name="sort" style="background: rgba(9, 13, 22, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
-                    <option value="newest" <?php echo (isset($_GET['sort']) && $_GET['sort'] === 'newest') ? 'selected' : ''; ?>>Newest First</option>
-                    <option value="price_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] === 'price_asc') ? 'selected' : ''; ?>>Price: Low to High</option>
-                    <option value="price_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] === 'price_desc') ? 'selected' : ''; ?>>Price: High to Low</option>
-                </select>
-            </div>
-            
-            <div style="display: flex; gap: 0.75rem; height: 44px; justify-content: flex-end;">
-                <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; height: 44px; display: inline-flex; align-items: center;">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <?php 
-                $has_active_filters = !empty($_GET['search']) || 
-                                      (!empty($_GET['category']) && $_GET['category'] !== 'all') || 
-                                      !empty($_GET['min_price']) || 
-                                      !empty($_GET['max_price']) || 
-                                      (isset($_GET['sort']) && $_GET['sort'] !== 'newest');
-                if ($has_active_filters): 
-                ?>
-                    <a href="jobs.php" class="btn btn-outline" style="justify-content: center; height: 44px; padding: 0 1rem; display: inline-flex; align-items: center;" title="Reset Filters">
-                        <i class="fas fa-undo"></i> Reset
-                    </a>
-                <?php endif; ?>
+            <!-- Category Filter -->
+            <div class="filter-block">
+                <div class="filter-header">
+                    <span class="filter-title">Category</span>
+                    <i class="fas fa-chevron-up filter-chevron open"></i>
+                </div>
+                <div class="filter-body">
+                    <?php
+                    $cat_opts = [
+                        'design'      => ['label' => 'Design & Creative'],
+                        'development' => ['label' => 'Programming & Tech'],
+                        'writing'     => ['label' => 'Writing & Translation'],
+                        'video'       => ['label' => 'Video & Animation'],
+                        'music'       => ['label' => 'Music & Audio'],
+                        'business'    => ['label' => 'Business'],
+                    ];
+                    foreach ($cat_opts as $val => $opt):
+                    ?>
+                    <div class="filter-row">
+                        <label>
+                            <input type="checkbox" name="cat_cb[]" value="<?php echo $val; ?>"
+                                   <?php echo ($category_filter === $val) ? 'checked' : ''; ?>
+                                   onchange="document.getElementById('filter-form').submit()">
+                            <?php echo $opt['label']; ?>
+                        </label>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </form>
-    </div>
+    </aside>
 
-    <div class="job-grid">
-        <?php if(count($jobs) > 0): ?>
-            <?php foreach($jobs as $job): ?>
-                <div class="card job-card fade-in">
-                    <span class="category"><?php echo htmlspecialchars($job['category']); ?></span>
-                    <h3><?php echo htmlspecialchars($job['title']); ?></h3>
-                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;"><?php echo htmlspecialchars(substr($job['description'], 0, 100)) . '...'; ?></p>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="budget">$<?php echo number_format($job['price'], 2); ?></span>
-                        <a href="job-details.php?id=<?php echo $job['id']; ?>" class="btn btn-outline">Apply Now</a>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- Results bar -->
+        <div class="results-bar">
+            <p class="results-count">
+                <strong><?php echo number_format($jobCount); ?></strong> service<?php echo $jobCount !== 1 ? 's' : ''; ?> available
+            </p>
+            <form method="GET" action="jobs.php" style="display:inline;">
+                <input type="hidden" name="search"   value="<?php echo htmlspecialchars($search_query); ?>">
+                <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_filter); ?>">
+                <div class="sort-wrap">
+                    <span>Sort by</span>
+                    <select name="sort" class="sort-select" onchange="this.form.submit()">
+                        <option value="recent"     <?php echo ($sort_option == 'recent')     ? 'selected' : ''; ?>>Best Selling</option>
+                        <option value="price_asc"  <?php echo ($sort_option == 'price_asc')  ? 'selected' : ''; ?>>Price: Low to High</option>
+                        <option value="price_desc" <?php echo ($sort_option == 'price_desc') ? 'selected' : ''; ?>>Price: High to Low</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- GIG CARDS GRID -->
+        <div class="gig-grid">
+            <?php if ($result && $jobCount > 0): ?>
+                <?php while ($job = $result->fetch_assoc()):
+                    $img_path = (!empty($job['image']) && $job['image'] !== 'default.png')
+                        ? "uploads/" . htmlspecialchars($job['image'])
+                        : "images/hero_illustration.png";
+                ?>
+                <div class="gig-card">
+                    <!-- Cover image -->
+                    <div class="card-img-wrap">
+                        <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($job['title']); ?>" class="card-cover">
+                        <button class="heart-btn" aria-label="Save to favourites">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="card-body">
+                        <div class="card-category"><?php echo htmlspecialchars($job['category']); ?></div>
+                        <a href="freelancer_gig.php?id=<?php echo $job['id']; ?>" style="text-decoration:none;">
+                            <h3 class="card-title"><?php echo htmlspecialchars($job['title']); ?></h3>
+                        </a>
+
+                        <!-- Rating (static placeholder — replace with DB data when available) -->
+                        <div class="card-rating">
+                            <span class="stars"><i class="fas fa-star"></i></span>
+                            <span class="rating-num">4.82</span>
+                            <span class="rating-count">94 reviews</span>
+                        </div>
+
+                        <!-- Footer: seller + price -->
+                        <div class="card-footer">
+                            <div class="seller-info">
+                                <div class="seller-av"><?php echo strtoupper(substr($job['student_name'], 0, 1)); ?></div>
+                                <span class="seller-name">
+                                    <?php echo htmlspecialchars($job['student_name']); ?>
+                                    <i class="fas fa-check-circle verified"></i>
+                                </span>
+                            </div>
+                            <div class="card-price">
+                                <span class="price-label">Starting at</span>
+                                <span class="price-value">Rs. <?php echo number_format($job['price'], 0); ?></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; background: var(--glass-bg); border-radius: 24px;">
-                <i class="fas fa-search" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                <h2>No gigs found</h2>
-                <p style="color: var(--text-muted);">Check back later for new opportunities!</p>
-            </div>
-        <?php endif; ?>
-    </div>
-</section>
+                <?php endwhile; ?>
+
+            <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <h2>No gigs found</h2>
+                    <p>Try adjusting your search or filters to find what you're looking for.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </main>
+</div>
+
+<script>
+// Range slider syncs with max_price input
+const rangeSlider   = document.getElementById('price_range');
+const maxPriceInput = document.getElementById('max_price_input');
+if (rangeSlider && maxPriceInput) {
+    rangeSlider.addEventListener('input', () => {
+        maxPriceInput.value = rangeSlider.value;
+    });
+    maxPriceInput.addEventListener('input', () => {
+        rangeSlider.value = maxPriceInput.value;
+    });
+}
+</script>
 
 <?php include 'includes/footer.php'; ?>

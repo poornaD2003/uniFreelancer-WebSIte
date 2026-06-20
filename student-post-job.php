@@ -33,30 +33,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else { $error_msg="Please complete all fields."; }
     }
     if (isset($_POST['edit_gig'])) {
-        $gid=(int)($_POST['gig_id']??0); $et=trim($_POST['e_title']??''); $ec=trim($_POST['e_category']??'Development'); $ep=(float)($_POST['e_price']??0); $ed=trim($_POST['e_description']??'');
-        if($gid>0&&!empty($et)&&!empty($ed)&&$ep>0){
-            $s=$conn->prepare("SELECT status, image FROM gigs WHERE id=? AND student_id=? LIMIT 1");
-            if($s){$s->bind_param("ii",$gid,$user_id);$s->execute();$chk=$s->get_result()->fetch_assoc();$s->close();
-                if($chk){
-                    $img = $chk['image'];
+        $gid = (int)($_POST['gig_id'] ?? 0); 
+        $et  = trim($_POST['e_title'] ?? ''); 
+        $ec  = trim($_POST['e_category'] ?? 'Development'); 
+        $ep  = (float)($_POST['e_price'] ?? 0); 
+        $ed  = trim($_POST['e_description'] ?? '');
+        
+        if ($gid > 0 && !empty($et) && !empty($ed) && $ep > 0) {
+            // 1. කලින් තිබ්බ පරණ record එක සහ image එක database එකෙන් ගන්නවා
+            $s = $conn->prepare("SELECT image FROM gigs WHERE id=? AND student_id=? LIMIT 1");
+            if ($s) {
+                $s->bind_param("ii", $gid, $user_id);
+                $s->execute();
+                $chk = $s->get_result()->fetch_assoc();
+                $s->close();
+                
+                if ($chk) {
+                    // Default විදිහට පරණ image එකම තියාගන්නවා (අලුත් එකක් දැම්මේ නැත්නම්)
+                    $img = $chk['image']; 
+                    
+                    // 2. අලුත් image එකක් upload කරලා තියෙනවද බලනවා
                     if (isset($_FILES['e_gig_image']) && $_FILES['e_gig_image']['error'] === UPLOAD_ERR_OK) {
                         $ext = strtolower(pathinfo($_FILES['e_gig_image']['name'], PATHINFO_EXTENSION));
-                        if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
-                            if (!is_dir(__DIR__ . '/uploads')) { mkdir(__DIR__ . '/uploads', 0777, true); }
-                            $new_img = uniqid('gig_', true) . '.' . $ext;
-                            if (move_uploaded_file($_FILES['e_gig_image']['tmp_name'], __DIR__ . '/uploads/' . $new_img)) {
-                                if ($img !== 'default.png' && file_exists(__DIR__ . '/uploads/' . $img)) {
-                                    unlink(__DIR__ . '/uploads/' . $img);
-                                }
-                                $img = $new_img;
+                        
+                        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                            $target_dir = __DIR__ . '/uploads/';
+                            if (!is_dir($target_dir)) { 
+                                mkdir($target_dir, 0777, true); 
                             }
+                            
+                            $new_img = uniqid('gig_', true) . '.' . $ext;
+                            
+                            if (move_uploaded_file($_FILES['e_gig_image']['tmp_name'], $target_dir . $new_img)) {
+                                // පරණ image එක default එකක් නොවේ නම් සහ folder එකේ තියෙනවා නම් ඒක delete කරනවා
+                                if ($img !== 'default.png' && file_exists($target_dir . $img)) {
+                                    unlink($target_dir . $img);
+                                }
+                                $img = $new_img; // අලුත් image නම variable එකට දානවා
+                            } else {
+                                $error_msg = "Image එක uploads folder එකට move කරන්න බැරි වුණා. Folder permissions චෙක් කරන්න.";
+                            }
+                        } else {
+                            $error_msg = "අනුමත නොකරන ලද Image වර්ගයක් (Allowed: jpg, jpeg, png, gif, webp).";
+                        }
+                    } elseif (isset($_FILES['e_gig_image']) && $_FILES['e_gig_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+                        // Image එක upload වෙද්දීම ආපු error එකක් තිබ්බොත් ඒක පෙන්වනවා (उदा: ෆයිල් එක විශාල වැඩි වීම)
+                        $error_msg = "PHP Upload Error Code: " . $_FILES['e_gig_image']['error'];
+                    }
+                    
+                    // 3. කිසිම Image Error එකක් නැත්නම් විතරක් Database එක Update කරනවා
+                    if (empty($error_msg)) {
+                        $s = $conn->prepare("UPDATE gigs SET title=?, description=?, price=?, category=?, image=? WHERE id=? AND student_id=?");
+                        if ($s) {
+                            $s->bind_param("ssdssii", $et, $ed, $ep, $ec, $img, $gid, $user_id);
+                            if ($s->execute()) {
+                                $msg = "✓ Gig එක සාර්ථකව Update වුණා.";
+                            } else {
+                                $error_msg = "Database එක update කරන්න බැරි වුණා: " . $s->error;
+                            }
+                            $s->close();
+                        } else {
+                            $error_msg = "SQL Query එක prepare කරන්න බැරි වුණා: " . $conn->error;
                         }
                     }
-                    $s=$conn->prepare("UPDATE gigs SET title=?,description=?,price=?,category=?,image=? WHERE id=? AND student_id=?");
-                    if($s){$s->bind_param("ssdsiii",$et,$ed,$ep,$ec,$img,$gid,$user_id);if($s->execute())$msg="✓ Gig updated.";else $error_msg="Update failed.";$s->close();}
-                } else { $error_msg="Only pending gigs can be edited."; }
+                } else { 
+                    $error_msg = "මෙවැනි Gig එකක් සොයාගත නොහැක."; 
+                }
             }
-        } else { $error_msg="Fill all fields to update."; }
+        } else { 
+            $error_msg = "කරුණාකර සියලුම හිස්තැන් පුරවන්න."; 
+        }
     }
     if (isset($_POST['delete_gig'])) {
         $gid=(int)$_POST['gig_id'];
@@ -81,6 +127,8 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
         <a href="student-dashboard.php"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="student-post-job.php" class="active"><i class="fas fa-briefcase"></i> Post Gig</a>
         <a href="student-orders.php"><i class="fas fa-shopping-basket"></i> Orders</a>
+        <a href="my-gigs.php"><i class="fas fa-tasks"></i> My Reviews</a>
+
     </nav></aside>
     <main class="main">
         <h1>Post a Service Gig</h1>
@@ -100,7 +148,7 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
             <?php else: ?>
                 <div class="step-progress"><div class="step-wrapper"><div class="step-bubble done">✓</div><div class="step-label">Basic Info</div></div><div class="step-line" style="opacity:.7;"></div><div class="step-wrapper"><div class="step-bubble active">2</div><div class="step-label">Description</div></div></div>
                 <div class="section-header"><i class="fas fa-align-left"></i> Step 2: Description</div>
-                <form method="POST" action="student-post-job.php">
+                <form method="POST" action="student-post-job.php" enctype="multipart/form-data">
                     <input type="hidden" name="title" value="<?php echo htmlspecialchars($temp_title); ?>">
                     <input type="hidden" name="category" value="<?php echo htmlspecialchars($temp_category); ?>">
                     <input type="hidden" name="price" value="<?php echo htmlspecialchars($temp_price); ?>">
@@ -138,7 +186,7 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                             <form method="POST" action="student-post-job.php" onsubmit="return confirm('Delete this gig?');" style="margin:0;padding:0;"><input type="hidden" name="gig_id" value="<?php echo $gig['id']; ?>"><button type="submit" name="delete_gig" class="btn-small" style="background:#ef4444;border:none;color:#fff;cursor:pointer;margin:0;"><i class="fas fa-trash"></i> Delete</button></form>
                         </div>
                         <div class="edit-panel" id="edit-panel-<?php echo $gig['id']; ?>">
-                            <form method="POST" action="student-post-job.php" enctype="multipart/form-data>
+                            <form method="POST" action="student-post-job.php" enctype="multipart/form-data">
                                 <input type="hidden" name="gig_id" value="<?php echo $gig['id']; ?>">
                                 <label>Gig Title</label><input type="text" name="e_title" value="<?php echo htmlspecialchars($gig['title']); ?>" required>
                                 <label>Category</label><select name="e_category" required><?php foreach(['Development','Design','Writing','Tutoring','Other'] as $c): ?><option value="<?php echo $c; ?>"<?php echo $gig['category']===$c?' selected':''; ?>><?php echo $c; ?></option><?php endforeach; ?></select>

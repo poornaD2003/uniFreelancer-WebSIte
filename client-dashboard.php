@@ -22,7 +22,7 @@ if ($user_query && $user_query->num_rows > 0) {
 $words = explode(" ", $customer_name);
 $initials = "";
 foreach ($words as $w) {
-    $initials .= strtoupper($w[0]);
+    if (!empty($w)) $initials .= strtoupper($w[0]);
 }
 $initials = substr($initials, 0, 2); 
 
@@ -35,368 +35,817 @@ $pending_orders = $pending_orders_res ? $pending_orders_res->fetch_assoc()['tota
 $completed_orders_res = $conn->query("SELECT COUNT(*) as total FROM orders WHERE client_id = '$client_id' AND status = 'completed'");
 $completed_orders = $completed_orders_res ? $completed_orders_res->fetch_assoc()['total'] : 0;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order_action'])) {
-    $gig_id = intval($_POST['gig_id']);
-    $requirements = $conn->real_escape_string($_POST['requirements']);
-
-    $gig_check = $conn->query("SELECT student_id FROM gigs WHERE id = '$gig_id'");
-    if ($gig_check && $gig_check->num_rows > 0) {
-        $student_id = $gig_check->fetch_assoc()['student_id'];
-
-        $insert_query = "INSERT INTO orders (client_id, student_id, gig_id, status) VALUES ('$client_id', '$student_id', '$gig_id', 'pending')";
-        if ($conn->query($insert_query)) {
-            header("Location: client_dashboard.php?success=1#status");
-            exit();
-        }
-    }
-}
+// Get active chat order parameter if redirected from somewhere
+$open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>UniLance Client Center</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --color-background-primary: #0b0f19;
-            --color-background-secondary: #111827;
-            --color-border-tertiary: #1f2937;
-            --color-text-primary: #f3f4f6;
-            --color-text-secondary: #9ca3af;
-            --border-radius-md: 8px;
-            --border-radius-lg: 12px;
-        }
-        body { background: var(--color-background-primary); color: var(--color-text-primary); font-family: sans-serif; padding: 20px; }
-        .sidebar {
-            width: 240px; min-height: 600px;
-            background: var(--color-background-secondary);
-            border-right: 0.5px solid var(--color-border-tertiary);
-            padding: 1.5rem 0;
-            display: flex; flex-direction: column; gap: 4px;
-        }
-        .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 12px 20px;
-            font-size: 14px; color: var(--color-text-secondary);
-            cursor: pointer; border: none; background: none;
-            width: 100%; text-align: left; transition: all 0.2s;
-        }
-        .nav-item.active {
-            background: var(--color-background-primary);
-            color: var(--color-text-primary);
-            font-weight: 500;
-            border-left: 3px solid #1D9E75;
-            padding-left: 17px;
-        }
-        .nav-item i { font-size: 18px; }
-        .metric-card {
-            background: var(--color-background-secondary);
-            border-radius: var(--border-radius-md);
-            padding: 1rem 1.25rem;
-            flex: 1; min-width: 200px;
-            border: 0.5px solid var(--color-border-tertiary);
-        }
-        .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-        .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
-        .metric-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
-        .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; display: inline-block; }
-        .badge-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-        .badge-completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .section { display: none; }
-        .section.visible { display: block; }
-        .filter-btn {
-            font-size: 12px; padding: 6px 14px;
-            border: 0.5px solid var(--color-border-tertiary);
-            background: var(--color-background-primary);
-            border-radius: var(--border-radius-md);
-            color: var(--color-text-secondary); cursor: pointer;
-        }
-        .filter-btn.active-filter { background: #1D9E75; color: #fff; border-color: #1D9E75; }
-        .gig-card {
-            border: 0.5px solid var(--color-border-tertiary);
-            border-radius: var(--border-radius-lg);
-            background: var(--color-background-secondary);
-            padding: 1.25rem;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        textarea { width: 100%; height: 90px; padding: 10px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); color: white; border-radius: var(--border-radius-md); }
-    </style>
 
-    <script>
-        function switchTab(name, btn) {
-            // 1. Hide all sections
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/style.css">
 
-            // 2. Show the target section
-            var target = document.getElementById(name);
-            if (target) {
-                target.classList.add('visible');
-            }
+<style>
+  /* style.css හි ඇති variables වලට අනුකූලව Dashboard එක හැඩගැන්වීම */
+  body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+  }
 
-            // 3. Remove active state from all buttons
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  .dashboard-wrapper { 
+    display: flex; 
+    min-height: 100vh; 
+    background-color: var(--bg); 
+  }
 
-            // 4. Add active state to the clicked button
-            if (btn) {
-                btn.classList.add('active');
-            } else {
-                // If btn isn't provided (e.g., loaded from URL hash), find the right button and activate it
-                var activeBtn = document.querySelector(`.nav-item[onclick*="${name}"]`);
-                if (activeBtn) activeBtn.classList.add('active');
-            }
+  /* Sidebar Styles */
+  .sidebar { 
+    width: 280px; 
+    background-color: var(--surface); 
+    border-right: 1px solid var(--border); 
+    padding: 2rem; 
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: var(--shadow);
+  }
+  .sidebar-brand { 
+    font-size: 1.25rem; 
+    font-weight: 700; 
+    color: var(--green); 
+    margin-bottom: 2.5rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+  }
+  .sidebar-menu { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    list-style: none; 
+    padding: 0; 
+    margin: 0; 
+  }
+  .sidebar-item a { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    padding: 14px; 
+    color: var(--muted); 
+    text-decoration: none; 
+    border-radius: var(--radius); 
+    font-size: 0.95rem; 
+    font-weight: 500; 
+    transition: var(--trans); 
+  }
+  .sidebar-item a:hover, .sidebar-item.active a { 
+    background-color: var(--green-dim); 
+    color: var(--green); 
+  }
 
-            // 5. Update browser URL hash quietly
-            if (history.pushState) {
-                history.pushState(null, null, '#' + name);
-            } else {
-                location.hash = name;
-            }
-        }
+  /* Main Content Area */
+  .main-content { 
+    flex: 1; 
+    padding: 2.5rem; 
+    overflow-y: auto; 
+  }
+  .header-section { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 2.5rem; 
+  }
+  .user-profile-preview { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    background: var(--surface);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .avatar-circle { 
+    width: 42px; 
+    height: 42px; 
+    border-radius: 50%; 
+    background: linear-gradient(135deg, var(--green), var(--green-light)); 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 700; 
+    font-size: 0.9rem; 
+  }
 
-        function handleRouting() {
-            var tab = window.location.hash.substring(1);
-            var match = window.location.search.match(/[?&]tab=([^&]+)/);
-            var tabParam = match ? match[1] : null;
-            
-            var successMatch = window.location.search.match(/[?&]success=([^&]+)/);
-            var successParam = successMatch ? successMatch[1] : null;
-
-            if (!tab && tabParam) tab = tabParam;
-            if (!tab && successParam) tab = 'status';
-
-            var allowedTabs = ['dashboard', 'order', 'status'];
-            if (tab && allowedTabs.indexOf(tab) !== -1) {
-                switchTab(tab);
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', handleRouting);
-        window.addEventListener('hashchange', handleRouting);
-
-        function showOrderForm(id, gig, student, price) {
-            document.getElementById('form-gig-id').value = id;
-            document.getElementById('form-gig-title').textContent = gig;
-            document.getElementById('form-student-name').textContent = student;
-            document.getElementById('form-gig-price').textContent = price;
-            document.getElementById('order-form-container').style.display = 'block';
-            document.getElementById('order-form-container').scrollIntoView({behavior:'smooth'});
-        }
-
-        function filterOrders(type, btn) {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter'));
-            btn.classList.add('active-filter');
-
-            document.querySelectorAll('.order-row').forEach(row => {
-                if (type === 'all' || row.dataset.status === type) {
-                    row.style.display = 'block';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-    </script>
-</head>
-<body>
-
-<?php if (isset($_GET['success'])): ?>
-    <div id="success-toast" style="position: fixed; top: 80px; right: 20px; background: rgba(29, 158, 117, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: white; padding: 14px 24px; border-radius: var(--border-radius-md); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); border: 1px solid rgba(255,255,255,0.1); z-index: 1000; display: flex; align-items: center; gap: 12px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(-20px); opacity: 0;">
-        <i class="ti ti-circle-check" style="font-size: 20px;"></i>
-        <span style="font-size: 14px; font-weight: 500;">Order placed successfully!</span>
-        <button onclick="dismissToast()" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 18px; margin-left: 8px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; transition: color 0.2s;">&times;</button>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var toast = document.getElementById('success-toast');
-            if (toast) {
-                toast.offsetHeight;
-                toast.style.transform = 'translateY(0)';
-                toast.style.opacity = '1';
-                setTimeout(function() { dismissToast(); }, 5000);
-            }
-        });
-        function dismissToast() {
-            var toast = document.getElementById('success-toast');
-            if (toast) {
-                toast.style.transform = 'translateY(-20px)';
-                toast.style.opacity = '0';
-                setTimeout(function() { toast.remove(); }, 400);
-            }
-        }
-    </script>
-<?php endif; ?>
-
-<div style="display:flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; min-height: 650px;">
+  /* Metrics Cards Grid */
+  .metrics-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 1.5rem; 
+    margin-bottom: 2.5rem; 
+  }
+  .metric-card { 
+    background-color: var(--surface); 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius); 
+    padding: 1.5rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 20px; 
+    box-shadow: var(--shadow);
+    transition: var(--trans);
+  }
+  .metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+  .metric-icon { 
+    width: 52px; 
+    height: 52px; 
+    border-radius: var(--radius); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 1.5rem; 
+  }
+  .metric-icon.blue { background-color: rgba(99, 102, 241, 0.1); color: var(--blue); }
+  .metric-icon.amber { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+  .metric-icon.emerald { background-color: var(--green-dim); color: var(--green); }
   
-  <div class="sidebar">
-    <div style="padding: 0 20px 1rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0.5rem;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div style="width:38px;height:38px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:white;"><?php echo $initials; ?></div>
+  .metric-value { font-size: 1.75rem; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .metric-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Sections & Lists */
+  .section-card { 
+    background-color: var(--surface); 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius); 
+    padding: 2rem; 
+    box-shadow: var(--shadow);
+  }
+  .section-title { 
+    font-size: 1.15rem; 
+    font-weight: 700; 
+    margin-bottom: 1.5rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    color: var(--text);
+  }
+  .pipeline-list { display: flex; flex-direction: column; gap: 1rem; }
+  
+  .pipeline-item { 
+    background-color: var(--bg2); 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius); 
+    padding: 1.25rem; 
+    transition: var(--trans); 
+  }
+  .pipeline-item:hover { 
+    border-color: var(--green-light); 
+    background-color: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  /* Badges */
+  .badge { padding: 6px 14px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-pending { background-color: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+  .badge-progress { background-color: rgba(99, 102, 241, 0.12); color: var(--blue); }
+  .badge-completed { background-color: var(--green-dim); color: var(--green); }
+  .badge-cancelled { background-color: rgba(239, 68, 68, 0.12); color: #ef4444; }
+  
+  /* Buttons */
+  .filter-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem; padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius);
+    color: var(--muted); cursor: pointer;
+    font-weight: 600;
+    transition: var(--trans);
+  }
+  .filter-btn:hover {
+    border-color: var(--green);
+    color: var(--green);
+    background-color: var(--green-dim);
+  }
+
+  /* Light Theme Chat Box Styles */
+  .chat-container {
+    margin-top: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border); 
+    border-radius: var(--radius);
+    overflow: hidden; display: flex; flex-direction: column; 
+    box-shadow: var(--shadow);
+    animation: slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .chat-header {
+    padding: 12px 18px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; color: var(--muted); font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-history { max-height: 300px; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; background-color: var(--surface); }
+  .chat-bubble { max-width: 75%; padding: 12px 16px; font-size: 0.9rem; line-height: 1.5; display: flex; flex-direction: column; gap: 4px; position: relative; padding-right: 35px !important; }
+  
+  .chat-bubble-sent { 
+    align-self: flex-end; 
+    background: var(--green-dim); 
+    border: 1px solid rgba(16, 185, 129, 0.2); 
+    border-radius: 16px 16px 2px 16px; 
+    color: var(--text);
+  }
+  .chat-bubble-received { 
+    align-self: flex-start; 
+    background: var(--bg2); 
+    border: 1px solid var(--border); 
+    border-radius: 16px 16px 16px 2px; 
+    color: var(--text);
+  }
+  
+  .bubble-meta { font-size: 0.7rem; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; }
+  .bubble-meta-sent { align-self: flex-end; }
+  .bubble-meta-received { align-self: flex-start; }
+  
+  .chat-input-form { padding: 1rem; background: var(--bg2); border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-end; }
+  
+  .chat-textarea { 
+    flex: 1; height: 44px; min-height: 44px; max-height: 100px; 
+    background: var(--surface); 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius); 
+    padding: 11px 16px; color: var(--text); 
+    font-family: inherit; font-size: 0.85rem; resize: none; outline: none; 
+    transition: var(--trans); 
+  }
+  .chat-textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-dim); }
+  
+  .chat-btn-send { 
+    background: var(--green); color: #fff; border: none; padding: 0 20px; height: 44px; 
+    border-radius: var(--radius); font-weight: 600; font-size: 0.85rem; cursor: pointer; 
+    display: flex; align-items: center; justify-content: center; gap: 6px; 
+    transition: var(--trans); 
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+  .chat-btn-send:hover { background: var(--green-light); transform: translateY(-1px); }
+  
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Dropdown context list menu */
+  .bubble-menu-container { position: absolute; top: 8px; right: 10px; display: inline-block; }
+  .bubble-menu-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px; font-size: 14px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 20px; width: 20px; transition: var(--trans); }
+  .bubble-menu-btn:hover { background: rgba(0, 0, 0, 0.05); color: var(--text); }
+  .bubble-menu-dropdown { display: none; position: absolute; right: 0; top: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); z-index: 100; min-width: 130px; overflow: hidden; }
+  .bubble-menu-dropdown button { width: 100%; background: none; border: none; color: var(--text); padding: 10px 14px; text-align: left; font-size: 0.8rem; font-family: inherit; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--trans); }
+  .bubble-menu-dropdown button:hover { background: var(--bg2); color: var(--green); }
+  .bubble-menu-dropdown button.delete-btn { color: #ef4444; }
+  .bubble-menu-dropdown button.delete-btn:hover { background: rgba(239, 68, 68, 0.05); }
+
+  /* Message Inline Edit panel styles */
+  .edit-input-container { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; width: 100%; }
+  .edit-textarea { width: 100%; background: var(--surface); border: 1px solid var(--green); color: var(--text); border-radius: var(--radius); padding: 8px 12px; font-size: 0.85rem; font-family: inherit; resize: none; outline: none; min-height: 50px; }
+  .edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .edit-btn-save { background: var(--green); color: white; border: none; padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; cursor: pointer; font-weight: 600; }
+  .edit-btn-save:hover { background: var(--green-light); }
+  .edit-btn-cancel { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; cursor: pointer; font-weight: 600; }
+  .edit-btn-cancel:hover { background: var(--bg2); color: var(--text); }
+  .edited-indicator { font-style: italic; opacity: 0.6; }
+</style>
+
+<div class="dashboard-wrapper">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <i class="ti ti-activity" style="font-size: 1.5rem;"></i> Client Analytics
+    </div>
+    <ul class="sidebar-menu">
+      <li class="sidebar-item active">
+        <a href="client-dashboard.php"><i class="ti ti-smart-home"></i> Pipeline Hub</a>
+      </li>
+      <li class="sidebar-item">
+        <a href="jobs.php"><i class="ti ti-square-plus"></i> Launch Order</a>
+      </li>
+    </ul>
+  </aside>
+
+  <div class="main-content">
+    <div class="header-section">
+      <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">Welcome Back!</h1>
+        <p style="color: var(--muted); font-size: 0.9rem; font-weight: 500;">Monitor your real-time processing operations and contract status.</p>
+      </div>
+      <div class="user-profile-preview">
+        <div class="avatar-circle"><?php echo $initials; ?></div>
         <div>
-          <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);"><?php echo $customer_name; ?></div>
-          <div style="font-size:11px;color:var(--color-text-secondary);">Customer Portal</div>
+          <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text);"><?php echo htmlspecialchars($customer_name); ?></h4>
+          <p style="font-size: 0.75rem; color: var(--muted); font-weight: 600;">Client Node Account</p>
         </div>
       </div>
     </div>
-    <button class="nav-item active" onclick="switchTab('dashboard',this)"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</button>
-    <button class="nav-item" onclick="switchTab('order',this)"><i class="ti ti-shopping-cart" aria-hidden="true"></i> Place Order</button>
-    <button class="nav-item" onclick="switchTab('status',this)"><i class="ti ti-list-check" aria-hidden="true"></i> Order Status</button>
-  </div>
 
-  <div style="flex:1; padding: 1.5rem; overflow:auto;">
-
-    <div id="dashboard" class="section visible">
-      <div style="margin-bottom:1.25rem;">
-        <div style="font-size:18px;font-weight:500;">Welcome, <?php echo $customer_name; ?> 👋</div>
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Here's an overview of your workspace activities</div>
-      </div>
-
-      <div style="display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;">
-        <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-shopping-bag"></i> Total orders</div>
-          <div class="metric-value"><?php echo $total_orders; ?></div>
-          <div class="metric-sub">All time activity</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-clock"></i> Pending</div>
-          <div class="metric-value" style="color:#f59e0b;"><?php echo $pending_orders; ?></div>
-          <div class="metric-sub">Awaiting delivery execution</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label"><i class="ti ti-circle-check"></i> Completed</div>
-          <div class="metric-value" style="color:#10b981;"><?php echo $completed_orders; ?></div>
-          <div class="metric-sub">Successfully deployed</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon blue"><i class="ti ti-folders"></i></div>
+        <div>
+          <p class="metric-label">Total Transactions</p>
+          <p class="metric-value"><?php echo $total_orders; ?></p>
         </div>
       </div>
-
-      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; border: 0.5px solid var(--color-border-tertiary);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Recent Pipeline Entries</div>
-        <table style="width:100%;font-size:13px;border-collapse:collapse;">
-          <thead>
-            <tr style="color:var(--color-text-secondary); text-align: left;">
-              <th style="padding:8px 0;">Job Architecture</th>
-              <th style="padding:8px 0;">Student Freelancer</th>
-              <th style="padding:8px 0;">Status Badge</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php
-            $recent_query = $conn->query("SELECT o.status, g.title, u.fullname as student_name FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.student_id = u.id WHERE o.client_id = '$client_id' ORDER BY o.orderId DESC LIMIT 3");
-            if ($recent_query && $recent_query->num_rows > 0) {
-                while($r = $recent_query->fetch_assoc()) {
-                    $badge = ($r['status'] === 'pending') ? 'badge-pending' : 'badge-completed';
-                    echo "<tr style='border-top:0.5px solid var(--color-border-tertiary);'>
-                            <td style='padding:12px 0;'>{$r['title']}</td>
-                            <td style='padding:12px 0;color:var(--color-text-secondary);'>{$r['student_name']}</td>
-                            <td style='padding:12px 0;'><span class='badge {$badge}'>" . ucfirst($r['status']) . "</span></td>
-                          </tr>";
-                }
-            } else {
-                echo "<tr><td colspan='3' style='padding:10px 0;color:var(--color-text-secondary);'>No recent records found.</td></tr>";
-            }
-            ?>
-          </tbody>
-        </table>
+      <div class="metric-card">
+        <div class="metric-icon amber"><i class="ti ti-hourglass-low"></i></div>
+        <div>
+          <p class="metric-label">Awaiting Dispatch</p>
+          <p class="metric-value"><?php echo $pending_orders; ?></p>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon emerald"><i class="ti ti-circle-check"></i></div>
+        <div>
+          <p class="metric-label">Settled Contracts</p>
+          <p class="metric-value"><?php echo $completed_orders; ?></p>
+        </div>
       </div>
     </div>
 
-    <div id="order" class="section">
-      <div style="font-size:18px;font-weight:500;margin-bottom:4px;">Place an order</div>
-      <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;">Browse student listings and register a project requirement entry</div>
-
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1.5rem;">
+    <div class="section-card">
+      <div class="section-title">
+        <i class="ti ti-git-pull-request" style="color: var(--green); font-size: 1.3rem;"></i> Active Operational Queues
+      </div>
+      
+      <div class="pipeline-list">
         <?php
-        $gigs_query = $conn->query("SELECT g.id, g.title, g.description, g.price  , u.fullname as student_name FROM gigs g JOIN users u ON g.student_id = u.id");
-        if ($gigs_query && $gigs_query->num_rows > 0) {
-            while($gig = $gigs_query->fetch_assoc()) {
-                echo "<div class='gig-card'>
-                        <div style='display:flex;justify-content:space-between;'>
-                            <div>
-                                <div style='font-size:14px;font-weight:500;'>{$gig['title']}</div>
-                                <div style='font-size:12px;color:var(--color-text-secondary);margin-top:2px;'>by {$gig['student_name']}</div>
-                            </div>
-                            <div style='text-align:right;'>
-                                <div style='font-size:14px;font-weight:500;color:#1D9E75;'>Rs. " . number_format($gig['price']) . "</div>
-                                <div style='font-size:11px;color:var(--color-text-secondary);'>Runtime: {$gig['delivery_days']} days</div>
-                            </div>
+        $orders_query = $conn->query("
+            SELECT o.orderId, o.status, g.title, g.price, u.fullname AS freelancer_name 
+            FROM orders o 
+            JOIN gigs g ON o.gig_id = g.id 
+            LEFT JOIN users u ON o.student_id = u.id
+            WHERE o.client_id = '$client_id' 
+            ORDER BY o.orderId DESC
+        ");
+
+        if ($orders_query && $orders_query->num_rows > 0) {
+            while ($row = $orders_query->fetch_assoc()) {
+                $orderId = $row['orderId'];
+                
+                if ($row['status'] == 'pending') {
+    $badge = 'badge-pending'; $progress_width = '25%'; $progress_color = '#f59e0b';
+} elseif ($row['status'] == 'in_progress') {
+    $badge = 'badge-progress'; $progress_width = '65%'; $progress_color = 'var(--blue)';
+} elseif ($row['status'] == 'completed') {
+    $badge = 'badge-completed'; $progress_width = '100%'; $progress_color = 'var(--green)';
+} else {
+    $badge = 'badge-cancelled'; $progress_width = '0%'; $progress_color = '#ef4444';
+}
+                
+                $freelancer_display = !empty($row['freelancer_name']) ? htmlspecialchars($row['freelancer_name']) : 'Not Assigned Yet';
+                ?>
+                <div class="pipeline-item" id="order-row-<?php echo $orderId; ?>">
+                    <div style="display:flex;justify-content:space-between;align-items:center; width:100%; flex-wrap:wrap; gap:15px;">
+                        <div style="flex:1; min-width:250px;">
+                            <h4 style="font-size:1rem;font-weight:700;margin-bottom:6px;color: var(--text);"><?php echo htmlspecialchars($row['title']); ?></h4>
+                            <p style='font-size:0.85rem;color:var(--muted); font-weight: 500;'>
+                                <strong>Order ID:</strong> #<?php echo $orderId; ?> &nbsp;|&nbsp; 
+                                <strong>Assigned Freelancer:</strong> <?php echo $freelancer_display; ?>
+                            </p>
                         </div>
-                        <div style='font-size:12px;color:var(--color-text-secondary);'>{$gig['description']}</div>
-                        <button onclick=\"showOrderForm('{$gig['id']}','" . addslashes($gig['title']) . "','" . addslashes($gig['student_name']) . "','Rs. " . number_format($gig['price']) . "')\" style='align-self:flex-start;background:#1D9E75;color:white;border:none;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;'>Order now</button>
-                      </div>";
-            }
-        }
-        ?>
-      </div>
-
-      <div id="order-form-container" style="display:none;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1.25rem; border:0.5px solid var(--color-border-tertiary);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:12px;">Confirm your transactional order record</div>
-        <form method="POST" action="client_dashboard.php" style="display:flex;flex-direction:column;gap:12px;max-width:420px;">
-          <input type="hidden" name="place_order_action" value="1">
-          <input type="hidden" id="form-gig-id" name="gig_id">
-
-          <div style="font-size:13px;color:var(--color-text-secondary);">Target: <span id="form-gig-title" style="color:white;font-weight:500;"></span></div>
-          <div style="font-size:13px;color:var(--color-text-secondary);">Developer: <span id="form-student-name" style="color:white;font-weight:500;"></span></div>
-          <div style="font-size:13px;color:var(--color-text-secondary);">Costing: <span id="form-gig-price" style="color:#1D9E75;font-weight:500;"></span></div>
-
-          <div>
-            <label style="font-size:13px;color:var(--color-text-secondary);display:block;margin-bottom:5px;">Scope Requirements Documentation</label>
-            <textarea name="requirements" placeholder="Provide system specific context mapping rules..."></textarea>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button type="submit" style="background:#1D9E75;color:white;border:none;padding:9px 20px;border-radius:4px;font-size:13px;cursor:pointer;">Confirm order</button>
-            <button type="button" onclick="document.getElementById('order-form-container').style.display='none'" style="background:none;border:0.5px solid var(--color-border-tertiary);padding:9px 20px;border-radius:4px;font-size:13px;cursor:pointer;color:var(--color-text-secondary);">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div id="status" class="section">
-      <div style="font-size:18px;font-weight:500;margin-bottom:1.25rem;">My order status</div>
-      <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
-        <button class="filter-btn active-filter" onclick="filterOrders('all',this)">All Listings</button>
-        <button class="filter-btn" onclick="filterOrders('pending',this)">Pending Execution</button>
-        <button class="filter-btn" onclick="filterOrders('completed',this)">Completed Pipeline</button>
-      </div>
-
-      <div id="order-rows" style="display:flex;flex-direction:column;gap:10px;">
-        <?php
-        $status_query = $conn->query("SELECT o.orderId, o.status, g.title, u.fullname as student_name, g.price FROM orders o JOIN gigs g ON o.gig_id = g.id JOIN users u ON o.student_id = u.id WHERE o.client_id = '$client_id' ORDER BY o.orderId DESC");
-        if ($status_query && $status_query->num_rows > 0) {
-            while($row = $status_query->fetch_assoc()) {
-                $badge = ($row['status'] === 'pending') ? 'badge-pending' : 'badge-completed';
-                $progress_width = ($row['status'] === 'pending') ? '45%' : '100%';
-                $progress_color = ($row['status'] === 'pending') ? '#1D9E75' : '#0F6E56';
-
-                echo "<div class='order-row' data-status='{$row['status']}' style='border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:1rem 1.25rem; background: var(--color-background-secondary);'>
-                        <div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'>
-                            <div>
-                                <div style='font-size:14px;font-weight:500;'>{$row['title']}</div>
-                                <div style='font-size:12px;color:var(--color-text-secondary);margin-top:2px;'>Developer Relation: {$row['student_name']}</div>
-                            </div>
-                            <div style='display:flex;align-items:center;gap:12px;'>
-                                <span style='font-size:13px;font-weight:500;'>Rs. " . number_format($row['price']) . "</span>
-                                <span class='badge {$badge}'>" . ucfirst($row['status']) . "</span>
-                            </div>
+                        <div style='display:flex;align-items:center;gap:14px;'>
+                            <span style='font-size:1.05rem;font-weight:700;color:var(--text);'>Rs. <?php echo number_format($row['price'], 2); ?></span>
+                            <span class='badge <?php echo $badge; ?>'><?php echo ucfirst(str_replace('_',' ',$row['status'])); ?></span>
+                            <?php if ($row['status'] === 'completed'): ?>
+        <a href="payment.php?order_id=<?php echo $orderId; ?>" class="chat-btn-send" style="height: 38px; padding: 0 16px; font-size: 0.8rem; text-decoration: none; display: flex; align-items: center; gap: 6px; box-shadow: none;">
+            <i class="ti ti-credit-card"></i> Pay Now
+        </a>
+    <?php endif; ?>
+                            <button id="chat-btn-<?php echo $orderId; ?>" onclick="toggleChat(<?php echo $orderId; ?>)" class="filter-btn" style="display:flex; align-items:center; gap:6px;">
+                                <i class="ti ti-message"></i> Discussion Panel
+                            </button>
+                        </div>  
+                    </div>
+                    
+                    <div style='margin-top:14px; margin-bottom: 5px;'>
+                        <div style='background:rgba(0,0,0,0.06);border-radius:20px;height:6px;overflow:hidden;'>
+                            <div style='width:<?php echo $progress_width; ?>;height:100%;background:<?php echo $progress_color; ?>;border-radius:20px;'></div>
                         </div>
-                        <div style='margin-top:10px;'>
-                            <div style='background:var(--color-background-primary);border-radius:20px;height:6px;overflow:hidden;'>
-                                <div style='width:{$progress_width};height:100%;background:{$progress_color};border-radius:20px;'></div>
-                            </div>
+                    </div>
+
+                    <div id="chat-box-<?php echo $orderId; ?>" class="chat-container" style="display:none; text-align: left;">
+                        <div class="chat-header">
+                            <i class="ti ti-brand-hipchat" style="color: var(--green); font-size:16px;"></i>
+                            <span>Chat Workspace Matrix with Developer: <strong><?php echo $freelancer_display; ?></strong></span>
                         </div>
-                      </div>";
+                        
+                        <div class="chat-history">
+                            <?php
+                             $msg_stmt = $conn->prepare("
+                                 SELECT om.id, om.sender_id, om.message, om.file_path, om.sent_at, u.fullname 
+                                 FROM order_messages om 
+                                 JOIN users u ON om.sender_id = u.id 
+                                 WHERE om.order_id = ? AND om.deleted_by_client = 0
+                                 ORDER BY om.sent_at ASC
+                             ");
+                             if($msg_stmt) {
+                                 $msg_stmt->bind_param("i", $orderId);
+                                 $msg_stmt->execute();
+                                 $chat_history = $msg_stmt->get_result();
+
+                                 if ($chat_history->num_rows > 0) {
+                                     while ($msg = $chat_history->fetch_assoc()) {
+                                         $is_current_user = (intval($msg['sender_id']) === intval($client_id));
+                                         $bubble_class = $is_current_user ? 'chat-bubble-sent' : 'chat-bubble-received';
+                                         $meta_class = $is_current_user ? 'bubble-meta-sent' : 'bubble-meta-received';
+                                         $formatted_time = date('M d, g:i A', strtotime($msg['sent_at']));
+                                         
+                                         if ($is_current_user) {
+                                             $menu_options = '
+                                                 <button onclick="editMessageInline(' . $msg['id'] . ')"><i class="ti ti-edit"></i> Edit</button>
+                                                 <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete</button>
+                                             ';
+                                         } else {
+                                             $menu_options = '
+                                                 <button class="delete-btn" onclick="deleteMessage(' . $msg['id'] . ')"><i class="ti ti-trash"></i> Delete for Me</button>
+                                             ';
+                                         }
+                                         ?>
+                                         <div class="chat-bubble <?php echo $bubble_class; ?>" data-msg-id="<?php echo $msg['id']; ?>">
+<div style="font-weight: 700; font-size: 11px; color: <?php echo $is_current_user ? 'var(--green)' : 'var(--muted)'; ?>; margin-bottom: 2px;">                                                 <?php echo htmlspecialchars($msg['fullname']); ?>
+                                             </div>
+                                             
+                                             <div class="bubble-menu-container">
+                                                 <button class="bubble-menu-btn" onclick="toggleBubbleMenu(event, <?php echo $msg['id']; ?>)">
+                                                     <i class="ti ti-dots-vertical"></i>
+                                                 </button>
+                                                 <div class="bubble-menu-dropdown" id="bubble-dropdown-<?php echo $msg['id']; ?>">
+                                                     <?php echo $menu_options; ?>
+                                                 </div>
+                                             </div>
+
+                                             <?php if (!empty($msg['message'])): ?>
+                                                 <div class="message-text" style="word-break: break-word; white-space: pre-wrap;"><?php echo htmlspecialchars($msg['message']); ?></div>
+                                             <?php endif; ?>
+                                             <?php if (!empty($msg['file_path'])): 
+                                                 $filename = basename($msg['file_path']);
+                                             ?>
+                                                 <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
+                                                     <a href="<?php echo htmlspecialchars($msg['file_path']); ?>" download class="attachment-btn" style="color: var(--green); text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                                                         <i class="ti ti-download"></i> Download <?php echo htmlspecialchars($filename); ?>
+                                                     </a>
+                                                 </div>
+                                             <?php endif; ?>
+                                             <div class="bubble-meta <?php echo $meta_class; ?>">
+                                                 <span><?php echo $formatted_time; ?></span>
+                                             </div>
+                                         </div>
+                                         <?php
+                                     }
+                                 } else {
+                                     echo "<div class='no-messages' style='text-align:center; padding: 2rem 0; color:var(--muted); font-size: 13px;'>
+                                             <i class='ti ti-messages' style='font-size: 26px; color:var(--green); display:block; margin-bottom: 6px;'></i>
+                                             No conversation history found. Drop a line below to sync up.
+                                           </div>";
+                                 }
+                                 $msg_stmt->close();
+                             }   
+                            ?>
+                        </div>
+
+                        <form class="chat-input-form" id="chat-form-<?php echo $orderId; ?>" onsubmit="submitChatMessage(event, <?php echo $orderId; ?>)" enctype="multipart/form-data">
+                            <input type="hidden" name="order_id" value="<?php echo $orderId; ?>">
+                            <button type="button" onclick="document.getElementById('attachment-<?php echo $orderId; ?>').click()" class="filter-btn" style="height: 44px; width: 44px; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 16px;">
+                                <i class="ti ti-paperclip"></i>
+                            </button>
+                            <input type="file" name="attachment" id="attachment-<?php echo $orderId; ?>" style="display: none;" onchange="handleFileSelected(<?php echo $orderId; ?>)">
+                            
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <textarea name="message" id="message-text-<?php echo $orderId; ?>" class="chat-textarea" placeholder="Type transmission variables here..." onkeydown="handleTextareaKeydown(event, <?php echo $orderId; ?>)"></textarea>
+                                <div id="file-name-badge-<?php echo $orderId; ?>" style="display: none; align-items: center; gap: 6px; font-size: 11px; color: var(--green); margin-top: 4px; background: var(--green-dim); padding: 4px 10px; border-radius: var(--radius); border: 1px solid var(--border); width: fit-content;">
+                                    <i class="ti ti-file"></i> <span class="file-txt"></span>
+                                    <button type="button" onclick="clearFileSelected(<?php echo $orderId; ?>)" style="background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size: 13px; line-height: 1; margin-left: 4px;">&times;</button>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="chat-btn-send">
+                                <i class="ti ti-send"></i> Transmit
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+                <?php
             }
         } else {
-            echo "<p style='color:var(--color-text-secondary);'>No registered transactional pipeline records tracked.</p>";
+            echo "<p style='color:var(--muted);text-align:center;padding:20px;font-weight:500;'>No registered transactional pipeline records tracked.</p>";
         }
         ?>
       </div>
     </div>
-
   </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<script>
+    function toggleChat(orderId) {
+        var chatBox = document.getElementById('chat-box-' + orderId);
+        if (chatBox) {
+            var btn = document.getElementById('chat-btn-' + orderId);
+            if (chatBox.style.display === 'none' || chatBox.style.display === '') {
+                chatBox.style.display = 'flex';
+                if (btn) {
+                    btn.innerHTML = '<i class="ti ti-message-off"></i> Close Panel';
+                    btn.style.background = 'rgba(239, 68, 68, 0.08)'; btn.style.color = '#ef4444'; btn.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                }
+                var historyDiv = chatBox.querySelector('.chat-history');
+                if (historyDiv) { historyDiv.scrollTop = historyDiv.scrollHeight; }
+            } else {
+                chatBox.style.display = 'none';
+                if (btn) {
+                    btn.innerHTML = '<i class="ti ti-message"></i> Discussion Panel';
+                    btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+                }
+            }
+        }
+    }
 
-</body>
-</html>
+    const currentUserId = <?php echo json_encode($client_id); ?>;
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function renderMessageBubble(msg, currentUserId) {
+        let isCurrentUser = (parseInt(msg.sender_id) === parseInt(currentUserId));
+        let bubbleClass = isCurrentUser ? 'chat-bubble-sent' : 'chat-bubble-received';
+        let metaClass = isCurrentUser ? 'bubble-meta-sent' : 'bubble-meta-received';
+        let labelColor = isCurrentUser ? 'var(--green)' : 'var(--muted)';
+        
+        let messageTextHtml = msg.message ? `<div class="message-text" style="word-break: break-word; white-space: pre-wrap;">${escapeHtml(msg.message)}</div>` : '';
+        let fileAttachmentHtml = '';
+        
+        if (msg.file_path) {
+            let filename = msg.file_path.split('/').pop();
+            fileAttachmentHtml = `
+                <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
+                    <a href="${escapeHtml(msg.file_path)}" download class="attachment-btn" style="color: var(--green); text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                        <i class="ti ti-download"></i> Download ${escapeHtml(filename)}
+                    </a>
+                </div>
+            `;
+        }
+        
+        let menuOptionsHtml = isCurrentUser ? `
+            <button onclick="editMessageInline(${msg.id})"><i class="ti ti-edit"></i> Edit</button>
+            <button class="delete-btn" onclick="deleteMessage(${msg.id})"><i class="ti ti-trash"></i> Delete</button>
+        ` : `
+            <button class="delete-btn" onclick="deleteMessage(${msg.id})"><i class="ti ti-trash"></i> Delete for Me</button>
+        `;
+        
+        let threeDotMenuHtml = `
+            <div class="bubble-menu-container">
+                <button class="bubble-menu-btn" onclick="toggleBubbleMenu(event, ${msg.id})">
+                    <i class="ti ti-dots-vertical"></i>
+                </button>
+                <div class="bubble-menu-dropdown" id="bubble-dropdown-${msg.id}">
+                    ${menuOptionsHtml}
+                </div>
+            </div>
+        `;
+        
+        return `
+            <div class="chat-bubble ${bubbleClass}" data-msg-id="${msg.id}">
+                <div style="font-weight: 700; font-size: 11px; color: ${labelColor}; margin-bottom: 2px;">
+                    ${escapeHtml(msg.fullname)}
+                </div>
+                ${threeDotMenuHtml}
+                ${messageTextHtml}
+                ${fileAttachmentHtml}
+                <div class="bubble-meta ${metaClass}">
+                    <span>${escapeHtml(msg.sent_at)}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function toggleBubbleMenu(event, msgId) {
+        event.stopPropagation();
+        document.querySelectorAll('.bubble-menu-dropdown').forEach(dropdown => {
+            if (dropdown.id !== 'bubble-dropdown-' + msgId) dropdown.style.display = 'none';
+        });
+        const dropdown = document.getElementById('bubble-dropdown-' + msgId);
+        if (dropdown) dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+    
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.bubble-menu-dropdown').forEach(dropdown => dropdown.style.display = 'none');
+    });
+
+    function editMessageInline(msgId) {
+        const bubble = document.querySelector(`[data-msg-id="${msgId}"]`);
+        if (!bubble || bubble.querySelector('.edit-input-container')) return;
+        
+        const textContainer = bubble.querySelector('.message-text');
+        const originalText = textContainer ? textContainer.textContent.trim() : '';
+        
+        if (textContainer) textContainer.style.display = 'none';
+        const attachment = bubble.querySelector('.attachment-btn');
+        if (attachment) attachment.parentElement.style.display = 'none';
+        
+        const editContainer = document.createElement('div');
+        editContainer.className = 'edit-input-container';
+        editContainer.innerHTML = `
+            <textarea class="edit-textarea">${escapeHtml(originalText)}</textarea>
+            <div class="edit-actions">
+                <button class="edit-btn-save" onclick="saveInlineEdit(${msgId})">Save</button>
+                <button class="edit-btn-cancel" onclick="cancelInlineEdit(${msgId})">Cancel</button>
+            </div>
+        `;
+        bubble.insertBefore(editContainer, bubble.querySelector('.bubble-meta'));
+        editContainer.querySelector('.edit-textarea').focus();
+    }
+
+    function cancelInlineEdit(msgId) {
+        const bubble = document.querySelector(`[data-msg-id="${msgId}"]`);
+        if (!bubble) return;
+        const editContainer = bubble.querySelector('.edit-input-container');
+        if (editContainer) editContainer.remove();
+        const textContainer = bubble.querySelector('.message-text');
+        if (textContainer) textContainer.style.display = 'block';
+        const attachment = bubble.querySelector('.attachment-btn');
+        if (attachment) attachment.parentElement.style.display = 'block';
+    }
+
+    function saveInlineEdit(msgId) {
+        const bubble = document.querySelector(`[data-msg-id="${msgId}"]`);
+        if (!bubble) return;
+        
+        const editContainer = bubble.querySelector('.edit-input-container');
+        const textarea = editContainer.querySelector('.edit-textarea');
+        const saveBtn = editContainer.querySelector('.edit-btn-save');
+        const newText = textarea.value.trim();
+        
+        if (newText === '') { alert('Message content payload cannot be blank.'); return; }
+        
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving...';
+        const formData = new FormData();
+        formData.append('message_id', msgId); formData.append('message', newText);
+        
+        fetch('edit_message_ajax.php', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                const textContainer = bubble.querySelector('.message-text');
+                if (textContainer) { textContainer.textContent = result.data.message; textContainer.style.display = 'block'; }
+                const attachment = bubble.querySelector('.attachment-btn');
+                if (attachment) attachment.parentElement.style.display = 'block';
+                
+                if (!bubble.querySelector('.edited-indicator')) {
+                    const meta = bubble.querySelector('.bubble-meta');
+                    const editedSpan = document.createElement('span');
+                    editedSpan.className = 'edited-indicator'; editedSpan.style.fontSize = '9px'; editedSpan.style.opacity = '0.7'; editedSpan.textContent = ' (edited)';
+                    meta.appendChild(editedSpan);
+                }
+                editContainer.remove();
+            } else {
+                alert('Error: ' + result.message); saveBtn.disabled = false; saveBtn.textContent = 'Save';
+            }
+        }).catch(err => { alert('Failed to edit message structure.'); saveBtn.disabled = false; saveBtn.textContent = 'Save'; });
+    }
+
+    function deleteMessage(msgId) {
+        if (!confirm('Are you sure you want to delete this message?')) return;
+        const formData = new FormData();
+        formData.append('message_id', msgId);
+        
+        fetch('delete_message_ajax.php', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                const bubble = document.querySelector(`[data-msg-id="${msgId}"]`);
+                if (bubble) {
+                    bubble.style.transition = 'opacity 0.3s'; bubble.style.opacity = '0';
+                    setTimeout(() => bubble.remove(), 300);
+                }
+            } else { alert('Error: ' + result.message); }
+        }).catch(err => alert('Failed to delete trace packet.'));
+    }
+
+    function handleFileSelected(orderId) {
+        const fileInput = document.getElementById('attachment-' + orderId);
+        const badge = document.getElementById('file-name-badge-' + orderId);
+        if (fileInput.files.length > 0) {
+            badge.querySelector('.file-txt').textContent = fileInput.files[0].name;
+            badge.style.display = 'inline-flex';
+        } else { badge.style.display = 'none'; }
+    }
+
+    function clearFileSelected(orderId) {
+        const fileInput = document.getElementById('attachment-' + orderId);
+        const badge = document.getElementById('file-name-badge-' + orderId);
+        fileInput.value = ''; badge.style.display = 'none'; badge.querySelector('.file-txt').textContent = '';
+    }
+
+    function handleTextareaKeydown(event, orderId) {
+        if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submitChatMessage(event, orderId); }
+    }
+
+    function submitChatMessage(event, orderId) {
+        if (event) event.preventDefault();
+        const form = document.getElementById('chat-form-' + orderId);
+        const textarea = document.getElementById('message-text-' + orderId);
+        const fileInput = document.getElementById('attachment-' + orderId);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        if (!textarea.value.trim() && fileInput.files.length === 0) return;
+        
+        const formData = new FormData(form);
+        textarea.disabled = true; fileInput.disabled = true; submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ti ti-loader"></i>';
+        
+        fetch('send_message_ajax.php', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                textarea.value = ''; clearFileSelected(orderId);
+                const chatHistory = document.querySelector('#chat-box-' + orderId + ' .chat-history');
+                if (chatHistory) {
+                    const noMsg = chatHistory.querySelector('.no-messages'); if (noMsg) noMsg.remove();
+                    chatHistory.innerHTML += renderMessageBubble(result.data, currentUserId);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }
+            } else { alert('Error: ' + result.message); }
+        }).catch(err => alert('Terminal sending failure.'))
+        .finally(() => {
+            textarea.disabled = false; fileInput.disabled = false; submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="ti ti-send"></i> Transmit'; textarea.focus();
+        });
+    }
+
+    function pollNewMessages(orderId) {
+        const chatBox = document.getElementById('chat-box-' + orderId);
+        if (!chatBox || chatBox.style.display !== 'flex' || chatBox.dataset.polling === 'true') return;
+        
+        chatBox.dataset.polling = 'true';
+        const chatHistory = chatBox.querySelector('.chat-history');
+        
+        fetch(`get_messages_ajax.php?order_id=${orderId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                if (result.data && result.data.length > 0) {
+                    const noMsg = chatHistory.querySelector('.no-messages'); if (noMsg) noMsg.remove();
+                    const isAtBottom = chatHistory.scrollHeight - chatHistory.clientHeight <= chatHistory.scrollTop + 50;
+                    let activeIds = new Set();
+                    
+                    result.data.forEach(msg => {
+                        activeIds.add(msg.id);
+                        let bubble = chatHistory.querySelector(`[data-msg-id="${msg.id}"]`);
+                        if (bubble) {
+                            let textContainer = bubble.querySelector('.message-text');
+                            if (textContainer && textContainer.textContent !== msg.message && !bubble.querySelector('.edit-input-container')) {
+                                textContainer.textContent = msg.message;
+                                if (!bubble.querySelector('.edited-indicator')) {
+                                    const meta = bubble.querySelector('.bubble-meta');
+                                    const editedSpan = document.createElement('span');
+                                    editedSpan.className = 'edited-indicator'; editedSpan.style.fontSize = '9px'; editedSpan.style.opacity = '0.7'; editedSpan.textContent = ' (edited)';
+                                    meta.appendChild(editedSpan);
+                                }
+                            }
+                        } else { chatHistory.innerHTML += renderMessageBubble(msg, currentUserId); }
+                    });
+                    
+                    chatHistory.querySelectorAll('.chat-bubble').forEach(bubble => {
+                        let msgId = parseInt(bubble.getAttribute('data-msg-id'));
+                        if (msgId && !activeIds.has(msgId)) {
+                            bubble.style.transition = 'opacity 0.3s'; bubble.style.opacity = '0';
+                            setTimeout(() => bubble.remove(), 300);
+                        }
+                    });
+                    if (isAtBottom) chatHistory.scrollTop = chatHistory.scrollHeight;
+                } else {
+                    chatHistory.querySelectorAll('.chat-bubble').forEach(b => b.remove());
+                    if (!chatHistory.querySelector('.no-messages')) {
+                        chatHistory.innerHTML = `<div class='no-messages' style='text-align:center; padding: 2rem 0; color:var(--muted); font-size: 13px;'><i class='ti ti-messages' style='font-size: 24px; color:var(--green); display:block; margin-bottom: 6px;'></i>No updates.</div>`;
+                    }
+                }
+            }
+        }).catch(err => console.log(err)).finally(() => chatBox.dataset.polling = 'false');
+    }
+
+    // Polling Event loop configurations
+    setInterval(function() {
+        document.querySelectorAll('.chat-container').forEach(function(chatBox) {
+            if (chatBox.style.display === 'flex') {
+                let orderId = chatBox.id.replace('chat-box-', ''); pollNewMessages(orderId);
+            }
+        });
+    }, 2000);
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var openOrderId = <?php echo json_encode($open_order_id); ?>;
+        if (openOrderId > 0) {
+            toggleChat(openOrderId);
+            var row = document.getElementById('order-row-' + openOrderId);
+            if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+</script>
+
+<?php include 'includes/footer.php'; ?>

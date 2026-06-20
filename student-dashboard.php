@@ -30,6 +30,7 @@ if ($stmt) { $stmt->bind_param("i",$user_id); $stmt->execute(); $res=$stmt->get_
             <a href="student-dashboard.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
             <a href="student-post-job.php"><i class="fas fa-briefcase"></i> Post Gig</a>
             <a href="student-orders.php"><i class="fas fa-shopping-basket"></i> Orders</a>
+            <a href="my-gigs.php"><i class="fas fa-tasks"></i> My Reviews</a>
         </nav>
     </aside>
     <main class="main">
