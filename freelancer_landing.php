@@ -1,5 +1,4 @@
 <?php
-// You can add PHP logic here (e.g. form handling, DB queries)
 $name = "Alex Morgan";
 $title = "Student Web Developer";
 $tagline = "Building modern web experiences — one line at a time.";
@@ -25,7 +24,6 @@ $testimonials = [
     ["name" => "Priya M.", "role" => "Blogger", "avatar" => "PM", "text" => "Fixed bugs in my WordPress site quickly and explained everything clearly. Will definitely hire again.", "stars" => 4],
 ];
 
-// Handle contact form
 $msg_sent = false;
 $msg_error = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
@@ -34,7 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     $message    = htmlspecialchars(trim($_POST['message'] ?? ''));
     if ($from_name && $from_email && $message) {
         $headers = "From: $from_email\r\nReply-To: $from_email";
-        // mail($email, "New Contact from $from_name", $message, $headers);
         $msg_sent = true;
     } else {
         $msg_error = true;
@@ -65,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
   html { scroll-behavior: smooth; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-  /* ── NAVBAR ── */
   nav {
     position: fixed; top:0; width:100%; z-index:999;
     background: rgba(255,255,255,0.85);
@@ -87,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
   .nav-cta:hover { background: var(--primary-light)!important; transform: translateY(-1px)!important; }
   .nav-cta::after { display:none!important; }
 
-  /* ── HERO ── */
   #hero {
     min-height: 100vh; display:flex; align-items:center; justify-content:center;
     padding: 100px 6% 60px;

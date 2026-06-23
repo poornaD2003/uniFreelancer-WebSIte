@@ -2,7 +2,6 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 header('Content-Type: application/json');
 
-// 1. පරිශීලකයා ලොග් වී ඇත්දැයි බැලීම
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access.']);
     exit();
@@ -22,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // 3. ෆයිල් එකක් අප්ලෝඩ් කර ඇත්නම් එය සේව් කිරීම
     if (!empty($_FILES['attachment']['name'])) {
         $target_dir = "uploads/"; 
         if (!is_dir($target_dir)) {
@@ -36,7 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 4. MySQLi ($conn) මගින් මැසේජ් එක Insert කිරීම
     $stmt = $conn->prepare("INSERT INTO order_messages (order_id, sender_id, message, file_path, sent_at) VALUES (?, ?, ?, ?, NOW())");
     if ($stmt) {
         $stmt->bind_param("iiss", $order_id, $user_id, $message, $file_path);
