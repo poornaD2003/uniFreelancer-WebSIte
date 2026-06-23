@@ -42,39 +42,6 @@ if ($stmt) {
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/client_dashboard.css">
 
-<style>
-    .billing-table-card {
-        background-color: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 2rem;
-        box-shadow: var(--shadow);
-    }
-    .billing-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-    .billing-table th {
-        font-size: 0.85rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        padding: 12px 16px;
-        border-bottom: 2px solid var(--border);
-    }
-    .billing-table td {
-        padding: 16px;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.9rem;
-        color: var(--text);
-    }
-    .billing-table tr:hover {
-        background-color: var(--bg2);
-    }
-</style>
-
 <div class="dashboard-wrapper">
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -84,17 +51,11 @@ if ($stmt) {
       <li class="sidebar-item">
         <a href="client-dashboard.php"><i class="ti ti-smart-home"></i> Pipeline Hub</a>
       </li>
-      <li class="sidebar-item">
-        <a href="jobs.php"><i class="ti ti-square-plus"></i> Launch Order</a>
-      </li>
-      <li class="sidebar-item">
-        <a href="post-job.php"><i class="ti ti-circle-plus"></i> Post a Job</a>
-      </li>
-      <li class="sidebar-item">
-        <a href="client-postings.php"><i class="ti ti-clipboard-list"></i> My Job Postings</a>
-      </li>
       <li class="sidebar-item active">
         <a href="client-payments.php"><i class="ti ti-receipt"></i> Billing & Payments</a>
+      </li>
+      <li class="sidebar-item">
+        <a href="clientProfile.php"><i class="ti ti-user-cog"></i> Profile Settings</a>
       </li>
     </ul>
   </aside>

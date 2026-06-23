@@ -138,9 +138,39 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
     $display_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 }
 ?>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/client_dashboard.css">
 
-<div class="container card fade-in" style="max-width: 750px; margin: 140px auto 40px; padding: 2.5rem;">
-    <h2 style="margin-bottom: 1.5rem; font-size: 1.8rem; font-weight: 700;">Client Profile Management</h2>
+<div class="dashboard-wrapper">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <i class="ti ti-activity" style="font-size: 1.5rem;"></i> Client Analytics
+    </div>
+    <ul class="sidebar-menu">
+      <li class="sidebar-item">
+        <a href="client-dashboard.php"><i class="ti ti-smart-home"></i> Pipeline Hub</a>
+      </li>
+      <li class="sidebar-item">
+        <a href="client-payments.php"><i class="ti ti-receipt"></i> Billing & Payments</a>
+      </li>
+      <li class="sidebar-item active">
+        <a href="clientProfile.php"><i class="ti ti-user-cog"></i> Profile Settings</a>
+      </li>
+    </ul>
+  </aside>
+
+  <div class="main-content">
+    <div class="header-section" style="margin-bottom: 2rem;">
+      <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">Client Profile Management</h1>
+        <p style="color: var(--muted); font-size: 0.9rem; font-weight: 500;">Manage your personal credentials and company profile metadata.</p>
+      </div>
+    </div>
+    
+    <div class="container card fade-in" style="max-width: 750px; margin: 0 auto 40px; padding: 2.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);">
+
     
     <?php if(!empty($msg)): ?>
         <div class="success-badge" style="display: block; width: 100%; padding: 0.6rem 1rem; margin-bottom: 1.5rem;">
@@ -218,6 +248,7 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
         
         <button type="submit" name="change_password" class="btn btn-outline">Change Password</button>
     </form>
+  </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>

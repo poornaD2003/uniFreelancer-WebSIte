@@ -529,20 +529,6 @@
      opacity: 0.6;
  }
 
- /* Edit Form Panel Style */
- .edit-form-panel {
-     display: none;
-     background: var(--bg2);
-     border: 1px solid var(--border);
-     border-radius: var(--radius);
-     padding: 1.5rem;
-     margin-top: 1rem;
-     animation: slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
- }
- .edit-form-panel.open {
-     display: block;
- }
-
  /* Billing Table Style */
  .billing-table-card {
      background-color: var(--surface);
