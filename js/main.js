@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.style.borderColor = '';
     }
 
-    // ── Login / Register Forms Toggle (Combined Page) ──
     const showLoginBtn = document.getElementById('show-login');
     const showRegisterBtn = document.getElementById('show-register');
     const loginForm = document.getElementById('login-form');
@@ -89,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ── Navbar Scroll Reveal ──
     const nav = document.querySelector('nav');
     if (nav) {
         const handleNavbarScroll = () => {
@@ -99,15 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 nav.classList.remove('nav-scrolled');
             }
         };
-        // Init on load
         handleNavbarScroll();
         window.addEventListener('scroll', handleNavbarScroll);
     }
 
-    // ── Stats Count Up Logic ──
     const countUp = (element) => {
         const target = parseFloat(element.getAttribute('data-target'));
-        const duration = 1500; // 1.5 seconds
+        const duration = 1500;
         const startTime = performance.now();
         const isFloat = element.getAttribute('data-target').includes('.');
         const suffix = element.getAttribute('data-suffix') || '';
@@ -116,10 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const elapsedTime = currentTime - startTime;
             if (elapsedTime < duration) {
                 const progress = elapsedTime / duration;
-                // Ease out cubic
                 const easeProgress = 1 - Math.pow(1 - progress, 3);
                 const currentValue = easeProgress * target;
-                
+
                 if (isFloat) {
                     element.textContent = currentValue.toFixed(1) + suffix;
                 } else {
@@ -137,10 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(updateCount);
     };
 
-    // ── Scroll Reveal Intersection Observer ──
     const observerOptions = {
         root: null,
-        rootMargin: '0px -10% -10% 0px', // Slightly inset to ensure clean trigger
+        rootMargin: '0px -10% -10% 0px',
         threshold: 0.1
     };
 
@@ -148,20 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('show');
-                
-                // If this is a stat number and has not been counted yet
+
                 if (entry.target.classList.contains('stat-number') && !entry.target.classList.contains('counted')) {
                     entry.target.classList.add('counted');
                     countUp(entry.target);
                 }
-                
-                // Unobserve since animations should only fire once on scroll-down
+
                 observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
 
-    // Register all reveal items to observer
     const animElements = document.querySelectorAll('.hidden-anim');
     animElements.forEach(el => scrollObserver.observe(el));
 });

@@ -20,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// Extract inputs
 $message_id = isset($_POST['message_id']) ? intval($_POST['message_id']) : 0;
 
 if ($message_id <= 0) {
@@ -29,7 +28,6 @@ if ($message_id <= 0) {
 }
 
 try {
-    // 2. Fetch message and order details to verify authorization
     $stmt = $pdo->prepare("
         SELECT om.sender_id, om.order_id, o.client_id, o.student_id 
         FROM order_messages om 
@@ -53,14 +51,11 @@ try {
         exit();
     }
 
-    // 3. Routing delete actions
     if ($current_user_id === $sender_id) {
-        // Global delete: Delete completely if current user is the original sender
         $delete_stmt = $pdo->prepare("DELETE FROM order_messages WHERE id = ?");
         $delete_stmt->execute([$message_id]);
         echo json_encode(['status' => 'success', 'message' => 'Message globally deleted.']);
     } else {
-        // Delete only for me: Update status depending on the user's role in the order
         if ($current_user_id === $client_id) {
             $update_stmt = $pdo->prepare("UPDATE order_messages SET deleted_by_client = 1 WHERE id = ?");
             $update_stmt->execute([$message_id]);
