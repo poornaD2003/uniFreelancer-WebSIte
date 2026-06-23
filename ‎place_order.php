@@ -1,8 +1,8 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-include 'includes/db.php';
+include 'db.php';
+include 'includes/header.php';
+
+session_start();
 
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['user_id'] = 1;

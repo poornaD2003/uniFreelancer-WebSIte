@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include 'db.php';
+include 'db.php'; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,48 +13,47 @@ include 'db.php';
     <link rel="stylesheet" href="css/style.css?v=2.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Quick styling for the profile avatar */
         .nav-profile {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-        .avatar-img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #2ecc71;
-        }
     </style>
 </head>
 <body>
-    <nav>
-        <a href="index.php" class="logo">UniLance</a>
+    <nav id="nav">
+        <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
-            <li><a href="index.php">Home</a></li>
+            <li><a href="student_freelancer_site.php">Home</a></li>
             <li><a href="jobs.php">Browse Jobs</a></li>
-            <li><a href="freelancers.php">Students</a></li>
-            <?php if(isset($_SESSION['user_id'])): ?>
-                <li><a href="post-job.php">Post a Job</a></li>
-                <li><a href="dashboard.php">Dashboard</a></li>
+            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+                <li><a href="client-dashboard.php">Dashboard</a></li>
+            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
+                 <li><a href="student-post-job.php">Post a Gig</a></li>
+                <li><a href="student-dashboard.php">Dashboard</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
-            echo $_SESSION['user_id'];
-            echo $_SESSION['role'];
-                // Determine the correct profile page based on user role
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
-                $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
+                
+                if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+                    $pure_filename = basename($_SESSION['profile_pic']); 
+                    $profile_pic = '/unilance/uploads/' . $pure_filename;
+                } else {
+                    $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                }
             ?>
-                <div class="nav-profile">
+                <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
                     <a href="<?php echo $profile_page; ?>">
-                       profile
+                        <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
+                             alt="Profile Picture" 
+                             style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #7c3aed);"
+                             onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
-            <?php else: ?>
+            <?php else: ?>  
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
         </div>

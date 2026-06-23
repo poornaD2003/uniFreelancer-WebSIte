@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ── Form Validation (Register Page) ──
     const registerForm = document.querySelector('form[action="register.php"]');
-    
+
     if (registerForm) {
         registerForm.addEventListener('submit', (e) => {
             let isValid = true;
@@ -41,13 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function showError(input, message) {
         const group = input.parentElement;
         let error = group.querySelector('.error-message');
-        
+
         if (!error) {
             error = document.createElement('div');
             error.className = 'error-message';
             group.appendChild(error);
         }
-        
+
         error.textContent = message;
         error.style.display = 'block';
         input.style.borderColor = '#ef4444';
@@ -62,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.style.borderColor = '';
     }
 
-    // Toggle for combined auth page (if still used)
     const showLoginBtn = document.getElementById('show-login');
     const showRegisterBtn = document.getElementById('show-register');
     const loginForm = document.getElementById('login-form');
@@ -87,4 +87,72 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoginBtn.classList.remove('btn-primary');
         });
     }
+
+    const nav = document.querySelector('nav');
+    if (nav) {
+        const handleNavbarScroll = () => {
+            if (window.scrollY > 30) {
+                nav.classList.add('nav-scrolled');
+            } else {
+                nav.classList.remove('nav-scrolled');
+            }
+        };
+        handleNavbarScroll();
+        window.addEventListener('scroll', handleNavbarScroll);
+    }
+
+    const countUp = (element) => {
+        const target = parseFloat(element.getAttribute('data-target'));
+        const duration = 1500;
+        const startTime = performance.now();
+        const isFloat = element.getAttribute('data-target').includes('.');
+        const suffix = element.getAttribute('data-suffix') || '';
+
+        const updateCount = (currentTime) => {
+            const elapsedTime = currentTime - startTime;
+            if (elapsedTime < duration) {
+                const progress = elapsedTime / duration;
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const currentValue = easeProgress * target;
+
+                if (isFloat) {
+                    element.textContent = currentValue.toFixed(1) + suffix;
+                } else {
+                    element.textContent = Math.floor(currentValue) + suffix;
+                }
+                requestAnimationFrame(updateCount);
+            } else {
+                if (isFloat) {
+                    element.textContent = target.toFixed(1) + suffix;
+                } else {
+                    element.textContent = target + suffix;
+                }
+            }
+        };
+        requestAnimationFrame(updateCount);
+    };
+
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px -10% -10% 0px',
+        threshold: 0.1
+    };
+
+    const scrollObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('show');
+
+                if (entry.target.classList.contains('stat-number') && !entry.target.classList.contains('counted')) {
+                    entry.target.classList.add('counted');
+                    countUp(entry.target);
+                }
+
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    const animElements = document.querySelectorAll('.hidden-anim');
+    animElements.forEach(el => scrollObserver.observe(el));
 });

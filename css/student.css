@@ -1,0 +1,555 @@
+/* ────────────────────────────────────────────
+   GLOBAL VARIABLES & RESET
+──────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --primary: #10b981;
+    --primary-hover: #059669;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #94a3b8;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --radius: 12px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    background-color: #f8fafc;
+    margin: 0;
+    padding: 0;
+}
+
+/* ────────────────────────────────────────────
+   LAYOUT STRUCTURE (.wrap, .sidebar, .main)
+──────────────────────────────────────────── */
+.wrap {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    padding-top: 70px;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 260px;
+    background-color: #1e293b;
+    /* Dark Navy Slate */
+    color: #ffffff;
+    padding: 1.5rem 1rem;
+    display: flex;
+    height: calc(100vh - 70px);
+    flex-direction: column;
+    position: fixed;
+    top: 70px;
+    bottom: 0;
+    left: 0;
+    z-index: 99;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    padding-left: 0.5rem;
+    color: #10b981;
+    /* Emerald Green */
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.sidebar nav {
+    position: static;
+    top: auto;
+    width: auto;
+    height: auto;
+    z-index: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+    gap: 0.5rem;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    align-items: stretch;
+    justify-content: flex-start;
+    transition: none;
+}
+
+
+.sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.8rem 1rem;
+    color: #94a3b8;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.sidebar nav a i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Hover effect */
+.sidebar nav a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+/* Active Page Menu Item */
+.sidebar nav a.active {
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+/* ────────────────────────────────────────────
+   MAIN CONTENT AREA (SCROLLABLE RIGHT SIDE)
+──────────────────────────────────────────── */
+.main {
+    flex: 1;
+    margin-left: 260px;
+    padding: 2rem;
+    min-height: calc(100vh - 70px);
+    background-color: #f8fafc;
+}
+
+.main h1 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 2rem;
+}
+
+/* Containers */
+.container {
+    background: var(--bg-surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.section-header i {
+    color: var(--primary);
+}
+
+/* ────────────────────────────────────────────
+   DASHBOARD STATS CARDS (.cards, .card)
+──────────────────────────────────────────── */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background: var(--bg-surface);
+    padding: 1.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column-reverse;
+    /* Labels bottom, counts top */
+    gap: 8px;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+.card div {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.card strong {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Highlight specifically the earnings card */
+.cards .card:first-child strong {
+    color: var(--primary);
+}
+
+/* ────────────────────────────────────────────
+   DATA TABLES (.activity-table)
+──────────────────────────────────────────── */
+.activity-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.activity-table th {
+    background-color: #f8fafc;
+    padding: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.activity-table td {
+    padding: 1rem;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+/* Fixing the explicit color style from PHP code structure */
+.activity-table td[style*="color:#fff"] {
+    color: var(--text-main) !important;
+    /* Forces compatibility with light background */
+}
+
+.activity-table tr:last-child td {
+    border-bottom: none;
+}
+
+.activity-table tr:hover td {
+    background-color: #fafafa;
+}
+
+/* ────────────────────────────────────────────
+   FORM STYLING (.input-group, multi-step)
+──────────────────────────────────────────── */
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    background-color: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Step Progress Form Header */
+.step-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.step-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.step-bubble {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.step-bubble.active {
+    background: var(--primary);
+    color: white;
+}
+
+.step-bubble.done {
+    background: var(--primary-hover);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.step-wrapper:has(.active) .step-label {
+    color: var(--text-main);
+}
+
+.step-line {
+    height: 2px;
+    background: var(--border-color);
+    width: 80px;
+}
+
+/* ────────────────────────────────────────────
+   GIGS & ORDERS POST FEEDS Layouts
+──────────────────────────────────────────── */
+.posts-list,
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.post,
+.order {
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.post:hover,
+.order:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+}
+
+.post-header,
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.post-title,
+.order-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.post-meta,
+.order-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.post-desc,
+.order-desc {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #475569;
+    margin-bottom: 1.25rem;
+}
+
+/* Collapsible Edit Panel Mechanism */
+.edit-panel {
+    display: none;
+    /* Hidden by default */
+    background: var(--bg-surface);
+    border-top: 1px dashed var(--border-color);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+}
+
+.edit-panel.open {
+    display: block;
+    /* Triggered open by Javascript class toggle */
+}
+
+.edit-panel label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    margin-top: 1rem;
+}
+
+.edit-panel input,
+.edit-panel select,
+.edit-panel textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* ────────────────────────────────────────────
+   BUTTONS STYLING
+──────────────────────────────────────────── */
+button,
+button[type="submit"] {
+    background-color: var(--primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+button:hover,
+button[type="submit"]:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Small contextual actions inside list cards */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    background-color: #e2e8f0;
+    color: #334155;
+    font-weight: 500;
+}
+
+.btn-small:hover {
+    background-color: #cbd5e1;
+    color: var(--text-main);
+}
+
+/* ────────────────────────────────────────────
+   STATUS BADGES
+──────────────────────────────────────────── */
+.badge {
+    padding: 5px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.badge-approve,
+.badge-completed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge-cancelled,
+.badge-rejected {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-in-progress {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+/* ────────────────────────────────────────────
+   RESPONSIVE DESIGN BREAKPOINTS
+──────────────────────────────────────────── */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 70px;
+        padding: 2rem 0.5rem;
+    }
+
+    .sidebar h2 {
+        display: none;
+        /* Hide brand text on mobile views */
+    }
+
+    .sidebar nav a span,
+    .sidebar nav a {
+        justify-content: center;
+    }
+
+    .sidebar nav a i {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .sidebar nav a {
+        font-size: 0;
+        /* Hides text labels */
+    }
+
+    .main {
+        margin-left: 70px;
+        padding: 1.5rem;
+    }
+}

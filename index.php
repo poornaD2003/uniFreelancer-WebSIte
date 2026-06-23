@@ -1,52 +1,62 @@
 <?php include 'includes/header.php'; ?>
 
-<section class="hero">
-    <h1>Find the Perfect <span style="color: var(--primary);">Student Talent</span> for Your Project</h1>
-    <p>The exclusive freelance marketplace for university students. Hire skilled developers, designers, and writers from top campuses.</p>
-    <div class="hero-btns">
-        <a href="jobs.php" class="btn btn-primary">Browse Jobs</a>
-        <a href="login.php" class="btn btn-outline">Start Freelancing</a>
+<section class="hero hidden-anim">
+    <div class="hero-content">
+        <h1>Find the Perfect <span class="text-gradient">Student Talent</span> for Your Project</h1>
+        <p>The exclusive freelance marketplace for university students. Hire skilled developers, designers, and writers from top campuses.</p>
+        <div class="hero-btns">
+            <a href="jobs.php" class="btn btn-primary">Browse Jobs <i class="fas fa-arrow-right"></i></a>
+            <a href="login.php" class="btn btn-outline">Start Freelancing</a>
+        </div>
     </div>
 </section>
 
-<section class="categories" style="padding: 50px 5%; text-align: center;">
-    <h2 style="font-size: 2.5rem; margin-bottom: 3rem;">Popular Categories</h2>
+<section class="categories" style="padding: 80px 5%; text-align: center;">
+    <h2 class="section-title hidden-anim">Popular Categories</h2>
     <div class="job-grid">
-        <div class="card">
-            <i class="fas fa-code" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
+        <div class="card hidden-anim delay-1">
+            <div class="icon-wrapper green-glow">
+                <i class="fas fa-code"></i>
+            </div>
             <h3>Development</h3>
-            <p style="color: var(--text-muted);">Web, Mobile, and Software apps.</p>
+            <p>Web, Mobile, and Software apps.</p>
         </div>
-        <div class="card">
-            <i class="fas fa-palette" style="font-size: 2rem; color: var(--primary-hover); margin-bottom: 1rem;"></i>
+        <div class="card hidden-anim delay-2">
+            <div class="icon-wrapper warm-glow">
+                <i class="fas fa-palette"></i>
+            </div>
             <h3>Design</h3>
-            <p style="color: var(--text-muted);">UI/UX, Graphic design, and Branding.</p>
+            <p>UI/UX, Graphic design, and Branding.</p>
         </div>
-        <div class="card">
-            <i class="fas fa-pen-nib" style="font-size: 2rem; color: var(--accent); margin-bottom: 1rem;"></i>
+        <div class="card hidden-anim delay-3">
+            <div class="icon-wrapper orange-glow">
+                <i class="fas fa-pen-nib"></i>
+            </div>
             <h3>Writing</h3>
-            <p style="color: var(--text-muted);">Content, Copywriting, and Research.</p>
+            <p>Content, Copywriting, and Research.</p>
         </div>
-        <div class="card">
-            <i class="fas fa-graduation-cap" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
+        <div class="card hidden-anim delay-4">
+            <div class="icon-wrapper green-glow">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
             <h3>Tutoring</h3>
-            <p style="color: var(--text-muted);">Academic help and Skill sharing.</p>
+            <p>Academic help and Skill sharing.</p>
         </div>
     </div>
 </section>
 
-<section class="stats" style="padding: 80px 5%; background: var(--glass-bg);">
-    <div class="job-grid">
-        <div style="text-align: center;">
-            <h2 style="font-size: 3rem; color: var(--primary);">500+</h2>
+<section class="stats hidden-anim">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <h2 class="text-gradient">500+</h2>
             <p>Active Students</p>
         </div>
-        <div style="text-align: center;">
-            <h2 style="font-size: 3rem; color: var(--primary-hover);">1.2k+</h2>
+        <div class="stat-item">
+            <h2 class="text-gradient-warm">1.2k+</h2>
             <p>Jobs Completed</p>
         </div>
-        <div style="text-align: center;">
-            <h2 style="font-size: 3rem; color: var(--accent);">4.9/5</h2>
+        <div class="stat-item">
+            <h2 class="text-gradient">4.9/5</h2>
             <p>Client Rating</p>
         </div>
     </div>
