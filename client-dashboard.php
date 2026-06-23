@@ -54,10 +54,7 @@ $open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
         <a href="client-dashboard.php"><i class="ti ti-smart-home"></i> Pipeline Hub</a>
       </li>
       <li class="sidebar-item">
-        <a href="client-payments.php"><i class="ti ti-receipt"></i> Billing & Payments</a>
-      </li>
-      <li class="sidebar-item">
-        <a href="clientProfile.php"><i class="ti ti-user-cog"></i> Profile Settings</a>
+       <a href="jobs.php"><i class="ti ti-square-plus"></i> Launch Order</a>
       </li>
     </ul>
   </aside>
