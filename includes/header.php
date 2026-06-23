@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include 'db.php'; // ඔයාගේ db path එක includes ඇතුලේ නම් 'includes/db.php' හෝ 'db.php' ලෙස නිවැරදිව තබන්න
+include 'db.php'; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,7 +37,6 @@ include 'db.php'; // ඔයාගේ db path එක includes ඇතුලේ න
             <?php if(isset($_SESSION['user_id'])): 
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
                 
-                // 🛠️ PATH FIX: Session එකේ තියෙන පරණ path එක පිරිසිදු කර නිවැරදි එක සෑදීම
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
                     $profile_pic = '/unilance/uploads/' . $pure_filename;
@@ -51,10 +50,6 @@ include 'db.php'; // ඔයාගේ db path එක includes ඇතුලේ න
                              alt="Profile Picture" 
                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #7c3aed);"
                              onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
-                    </a>
-
-                    <a href="<?php echo $profile_page; ?>" class="btn btn-outline">
-                       Profile
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
