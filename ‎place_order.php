@@ -21,30 +21,19 @@ if (isset($_GET['gig_id'])) {
         $insert_order = "INSERT INTO orders (client_id, student_id, gig_id, status) VALUES ('$client_id', '$student_id', '$gig_id', 'pending')";
 
         if ($conn->query($insert_order)) {
-            header("Location: client-dashboard.php?success=1#status");
+            header("Location: client_dashboard.php?success=1#status");
             exit();
         } else {
-            $error = "Database error handling entry: " . $conn->error;
+            echo "Database error handling entry: " . $conn->error;
+            echo "System Database Error: " . $conn->error;
         }
     } else {
-        $error = "Selected student gig reference not found.";
+        echo "Selected student gig reference not found.";
+        echo "Error: The requested student gig record could not be found in our directory.";
     }
 } else {
-    $error = "No project gig was selected for purchase.";
+    echo "No project gig was selected for purchase.";
+    echo "Error: No specific service gig was selected for ordering.";
 }
-
-include 'includes/header.php';
 ?>
-
-<div class="container card fade-in" style="max-width: 600px; margin: 140px auto 40px; padding: 2.5rem; text-align: center;">
-    <?php if (isset($error)): ?>
-        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 1.5rem; border-radius: 12px; color: #ef4444; font-weight: 600; margin-bottom: 1.5rem;">
-            <?php echo htmlspecialchars($error); ?>
-        </div>
-        <a href="jobs.php" class="btn btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fas fa-th-large"></i> Return to Gigs
-        </a>
-    <?php endif; ?>
-</div>
-
 <?php include 'includes/footer.php'; ?>
