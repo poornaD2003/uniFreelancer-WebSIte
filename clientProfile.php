@@ -17,53 +17,6 @@ $error_msg = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 📸 NEW: PROFILE PICTURE UPLOAD LOGIC
-    if (isset($_POST['upload_image'])) {
-        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0) {
-            $file = $_FILES['profile_image'];
-            $fileName = $file['name'];
-            $fileTmpName = $file['tmp_name'];
-            $fileSize = $file['size'];
-            
-            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-            $allowedExtensions = ['jpg', 'jpeg', 'png'];
-
-            if (in_array($fileExt, $allowedExtensions)) {
-                if ($fileSize < 5000000) { // Max 5MB
-                    $newFileName = "profile_" . $user_id . "_" . time() . "." . $fileExt;
-                    
-                    $uploadDirectory = 'uploads/';
-                    if (!is_dir($uploadDirectory)) {
-                        mkdir($uploadDirectory, 0777, true);
-                    }
-                    
-                    $fileDestination = $uploadDirectory . $newFileName;
-
-                    if (move_uploaded_file($fileTmpName, $fileDestination)) {
-                        $stmtImg = $conn->prepare("UPDATE users SET profile_pic = ? WHERE id = ?");
-                        $stmtImg->bind_param("si", $newFileName, $user_id);
-                        
-                        if ($stmtImg->execute()) {
-                            $_SESSION['profile_pic'] = $newFileName;
-                            $msg = "Profile picture updated successfully!";
-                        } else {
-                            $error_msg = "Database update failed.";
-                        }
-                        $stmtImg->close();
-                    } else {
-                        $error_msg = "Failed to move uploaded file.";
-                    }
-                } else {
-                    $error_msg = "Your file is too large. Max size is 5MB.";
-                }
-            } else {
-                $error_msg = "Invalid file type. Only JPG, JPEG, and PNG are allowed.";
-            }
-        } else {
-            $error_msg = "Please select a valid image file to upload.";
-        }
-    }
-    
     if (isset($_POST['update_client'])) {
         $fullname = trim($_POST['fullname']);
         $b_name = trim($_POST['business_name']);
@@ -76,9 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt1->bind_param("si", $fullname, $user_id);
         $stmt1->execute();
         $stmt1->close();
-        
-        // Update session fullname dynamically
-        $_SESSION['fullname'] = $fullname;
         
         $stmt2 = $conn->prepare("INSERT INTO client_profiles (user_id, business_name, business_address, business_type, business_phone, business_website) 
                                 VALUES (?, ?, ?, ?, ?, ?) 
@@ -130,47 +80,10 @@ $stmtProfile->close();
 if (!$profile_data) {
     $profile_data = ['business_name'=>'', 'business_address'=>'', 'business_type'=>'', 'business_phone'=>'', 'business_website'=>''];
 }
-
-// Format the display profile picture URL
-if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.png') {
-    $display_pic = '/unilance/uploads/' . basename($user_data['profile_pic']);
-} else {
-    $display_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-}
 ?>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/client_dashboard.css">
 
-<div class="dashboard-wrapper">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <i class="ti ti-activity" style="font-size: 1.5rem;"></i> Client Analytics
-    </div>
-    <ul class="sidebar-menu">
-      <li class="sidebar-item">
-        <a href="client-dashboard.php"><i class="ti ti-smart-home"></i> Pipeline Hub</a>
-      </li>
-      <li class="sidebar-item">
-        <a href="client-payments.php"><i class="ti ti-receipt"></i> Billing & Payments</a>
-      </li>
-      <li class="sidebar-item active">
-        <a href="clientProfile.php"><i class="ti ti-user-cog"></i> Profile Settings</a>
-      </li>
-    </ul>
-  </aside>
-
-  <div class="main-content">
-    <div class="header-section" style="margin-bottom: 2rem;">
-      <div>
-        <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">Client Profile Management</h1>
-        <p style="color: var(--muted); font-size: 0.9rem; font-weight: 500;">Manage your personal credentials and company profile metadata.</p>
-      </div>
-    </div>
-    
-    <div class="container card fade-in" style="max-width: 750px; margin: 0 auto 40px; padding: 2.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);">
-
+<div class="container card fade-in" style="max-width: 750px; margin: 140px auto 40px; padding: 2.5rem;">
+    <h2 style="margin-bottom: 1.5rem; font-size: 1.8rem; font-weight: 700;">Client Profile Management</h2>
     
     <?php if(!empty($msg)): ?>
         <div class="success-badge" style="display: block; width: 100%; padding: 0.6rem 1rem; margin-bottom: 1.5rem;">
@@ -183,20 +96,6 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
             <?php echo htmlspecialchars($error_msg); ?>
         </div>
     <?php endif; ?>
-
-    <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 2rem;">
-        <h3 style="color: var(--primary); align-self: flex-start; margin-bottom: 1.25rem; font-size: 1.2rem; font-weight: 600;">Profile Picture</h3>
-        
-        <img src="<?php echo htmlspecialchars($display_pic); ?>" 
-             alt="Current Profile Picture" 
-             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary, #7c3aed); margin-bottom: 1rem;"
-             onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
-        
-        <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%; max-width: 320px;">
-            <input type="file" name="profile_image" accept="image/png, image/jpeg, image/jpg" required style="font-size: 0.9rem; color: var(--text-muted);">
-            <button type="submit" name="upload_image" class="btn btn-outline" style="width: 100%; justify-content: center; padding: 0.5rem;">Upload New Image</button>
-        </form>
-    </div>
 
     <form method="POST" style="margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 2rem;">
         <h3 style="color: var(--primary); margin-bottom: 1.25rem; font-size: 1.2rem; font-weight: 600;">Business Profile Info</h3>
@@ -248,7 +147,6 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
         
         <button type="submit" name="change_password" class="btn btn-outline">Change Password</button>
     </form>
-  </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>
