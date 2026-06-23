@@ -190,7 +190,8 @@ $total_amount = $gig_price + $platform_fee;
     <?php endif; ?>
 </div>
 
-<script src="path/to/filename.js" defer></script>
+<script>const paymentAmountFormatted = "<?php echo number_format($total_amount, 2); ?>";</script>
+<script src="js/payment.js" defer></script>
 
 
 <?php include 'includes/footer.php'; ?>
