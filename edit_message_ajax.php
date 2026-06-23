@@ -5,7 +5,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 1. Verify user is logged in
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access. Please login.']);
     exit();
@@ -20,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// Extract inputs
 $message_id = isset($_POST['message_id']) ? intval($_POST['message_id']) : 0;
 $new_message = isset($_POST['message']) ? trim($_POST['message']) : '';
 
@@ -35,7 +33,6 @@ if ($new_message === '') {
 }
 
 try {
-    // 2. Authorization check: Ensure current user is the original sender
     $stmt = $pdo->prepare("SELECT sender_id FROM order_messages WHERE id = ?");
     $stmt->execute([$message_id]);
     $msg = $stmt->fetch();
@@ -50,7 +47,6 @@ try {
         exit();
     }
 
-    // 3. Update the message content using PDO prepared statement
     $update_stmt = $pdo->prepare("UPDATE order_messages SET message = ? WHERE id = ?");
     $update_stmt->execute([$new_message, $message_id]);
 
