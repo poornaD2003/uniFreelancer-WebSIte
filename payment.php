@@ -74,7 +74,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment']) &&
         // bind_param structure: i=integer, d=double/float, s=string
         $pay_stmt->bind_param("iiidss", $pay_order_id, $client_id, $student_id, $amount, $payment_status, $current_date);
         $pay_stmt->execute();
+        $payment_id = $conn->insert_id;
         $pay_stmt->close();
+
+        // A2. Check if student has a club affiliation and route the contribution
+        $club_stmt = $conn->prepare("
+            SELECT c.id, c.contribution_rate 
+            FROM student_profiles sp 
+            JOIN clubs c ON sp.club_id = c.id 
+            WHERE sp.user_id = ? AND c.status = 'approved' 
+            LIMIT 1
+        ");
+        if ($club_stmt) {
+            $club_stmt->bind_param("i", $student_id);
+            $club_stmt->execute();
+            $club_res = $club_stmt->get_result()->fetch_assoc();
+            $club_stmt->close();
+            
+            if ($club_res) {
+                $club_id = (int)$club_res['id'];
+                $rate = (float)$club_res['contribution_rate'];
+                $club_amount = ($amount * $rate) / 100.0;
+                
+                $ledger_desc = "Contribution share of " . number_format($rate, 2) . "% from order #" . $pay_order_id;
+                
+                $ledger_stmt = $conn->prepare("INSERT INTO club_ledger (club_id, payment_id, amount, description) VALUES (?, ?, ?, ?)");
+                if ($ledger_stmt) {
+                    $ledger_stmt->bind_param("iids", $club_id, $payment_id, $club_amount, $ledger_desc);
+                    $ledger_stmt->execute();
+                    $ledger_stmt->close();
+                }
+            }
+        }
 
         // B. Update order status in orders table (If ENUM doesn't have 'paid', change 'paid' to 'completed')
         $order_stmt = $conn->prepare("UPDATE orders SET status = 'paid' WHERE orderId = ? AND client_id = ?");
