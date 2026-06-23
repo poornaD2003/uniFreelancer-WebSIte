@@ -47,6 +47,39 @@ if (isset($_GET['reject_id'])) {
 $query = "SELECT id, fullname, email, role, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC";
 $result = $conn->query($query);
 $pending_users = $result->fetch_all(MYSQLI_ASSOC);
+
+// 7. Secure Club Approval Action (MySQLi Prepared Statements)
+if (isset($_GET['approve_club_id'])) {
+    $approve_club_id = (int)$_GET['approve_club_id'];
+    
+    $stmt = $conn->prepare("UPDATE clubs SET status = 'approved' WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $approve_club_id);
+        if ($stmt->execute()) {
+            $msg = "Club approved successfully!";
+        }
+        $stmt->close();
+    }
+}
+
+// 8. Secure Club Rejection/Deletion Action (MySQLi Prepared Statements)
+if (isset($_GET['reject_club_id'])) {
+    $reject_club_id = (int)$_GET['reject_club_id'];
+    
+    $stmt = $conn->prepare("DELETE FROM clubs WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $reject_club_id);
+        if ($stmt->execute()) {
+            $error_msg = "Club registration request rejected and removed.";
+        }
+        $stmt->close();
+    }
+}
+
+// 9. Pending Clubs Fetch (MySQLi)
+$club_query = "SELECT id, club_name, club_code, description, contribution_rate, created_at FROM clubs WHERE status = 'pending' ORDER BY created_at DESC";
+$club_result = $conn->query($club_query);
+$pending_clubs = $club_result ? $club_result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
 <div style="padding: 120px 5% 4rem; font-family: sans-serif; background: #1a202c; color: white; min-height: 80vh;">
@@ -97,6 +130,49 @@ $pending_users = $result->fetch_all(MYSQLI_ASSOC);
                                     Approve
                                 </a>
                                 <a href="admin_approve.php?reject_id=<?php echo $user['id']; ?>" class="btn btn-outline" style="text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; color: #f87171; border: 1px solid rgba(239,68,68,0.2); display: inline-block;" onclick="return confirm('Are you sure you want to reject this user?');">
+                                    Reject
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+    <h2 style="margin-top: 3.5rem; margin-bottom: 0.5rem; font-size: 2rem; color: #fff;">Pending Clubs</h2>
+    <p style="color: #a0aec0; margin-bottom: 2rem;">Review pending club registration approval requests.</p>
+
+    <?php if (empty($pending_clubs)): ?>
+        <div class="card" style="text-align: center; color: #a0aec0; padding: 3rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            🎉 All caught up! No pending club registrations need evaluation right now.
+        </div>
+    <?php else: ?>
+        <div class="card" style="padding: 0; overflow-x: auto; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); margin-bottom: 3rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
+                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Club Name</th>
+                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Secret Access Code</th>
+                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Contribution Rate (%)</th>
+                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Description</th>
+                        <th style="padding: 1rem 1.5rem; color: #a0aec0; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($pending_clubs as $club): ?>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 1.2rem 1.5rem; font-weight: 500; color: #fff;"><?php echo htmlspecialchars($club['club_name']); ?></td>
+                            <td style="padding: 1.2rem 1.5rem; color: #a0aec0; font-family: monospace; font-size: 0.95rem; font-weight: bold;"><?php echo htmlspecialchars($club['club_code']); ?></td>
+                            <td style="padding: 1.2rem 1.5rem; color: #60a5fa; font-weight: bold;"><?php echo number_format($club['contribution_rate'], 2); ?>%</td>
+                            <td style="padding: 1.2rem 1.5rem; color: #a0aec0; font-size: 0.85rem; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($club['description']); ?>">
+                                <?php echo htmlspecialchars($club['description']); ?>
+                            </td>
+                            <td style="padding: 1.2rem 1.5rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <a href="admin_approve.php?approve_club_id=<?php echo $club['id']; ?>" class="btn btn-primary" style="background: #2ecc71; color: white; text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; display: inline-block;">
+                                    Approve
+                                </a>
+                                <a href="admin_approve.php?reject_club_id=<?php echo $club['id']; ?>" class="btn btn-outline" style="text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; color: #f87171; border: 1px solid rgba(239,68,68,0.2); display: inline-block;" onclick="return confirm('Are you sure you want to reject this club registration?');">
                                     Reject
                                 </a>
                             </td>
