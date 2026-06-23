@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_job'])) {
     $category = $_POST['category'];
     $student_id = $_SESSION['user_id'];
 
-    $stmt = $pdo->prepare("INSERT INTO gigs (student_id, title, description, price, category) VALUES (?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO gigs (student_id, title, description, price, category, image) VALUES (?, ?, ?, ?, ?, 'default.png')");
     if ($stmt->execute([$student_id, $title, $description, $price, $category])) {
         $success = "Gig posted successfully! <a href='jobs.php' style='color: inherit; text-decoration: underline;'>View Gigs</a>";
     } else {
@@ -59,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_job'])) {
             </select>
         </div>
         <div class="input-group">
-            <label>Budget ($)</label>
-            <input type="number" name="budget" required placeholder="50.00">
+            <label>Budget (LKR)</label>
+            <input type="number" step="0.01" min="1" name="price" required placeholder="5000.00">
         </div>
         <div class="input-group">
             <label>Description</label>
