@@ -483,7 +483,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 </div>
 
 <script>
-// Dynamically update the button label based on role selection on Step 1
 (function () {
     const radios = document.querySelectorAll('input[name="role"]');
     const btn    = document.getElementById('btn-next');
@@ -589,23 +588,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.addEventListener("DOMContentLoaded", function () {
     
-    // PHP මඟින් දත්ත සාර්ථකව සේව් වූ බව තහවුරු කළ විට පමණක් ක්‍රියාත්මක වේ
     <?php if ($success && (isset($_POST['register_student_details']) || isset($_POST['register_client_details']))): ?>
         
         //let roleType = "<?php echo isset($_POST['role']) ? $_POST['role'] : (isset($role) ? $role : ''); ?>";
-        let templateId = "template_6o00nsh";
+        let templateId = "";
         let emailData = {};
 
-        // පොදු ගිණුම් විස්තර (Account Info)
        let baseData = {
             fullname: <?php echo json_encode($_POST['fullname'] ?? $fullname ?? 'N/A'); ?>,
             email: <?php echo json_encode($_POST['email'] ?? $email ?? 'N/A'); ?>,
             user_id: <?php echo json_encode($step2_user_id ?? ''); ?>
         };
 
-        // 3. Role එක අනුව දත්ත සහ අදාළ Template ID එක වෙන් කර ගැනීම
         <?php if (isset($_POST['register_student_details'])): ?>
-            // 🎓 Student Data
+            templateId = "template_6o00nsh";
             emailData = {
                 ...baseData,
                 university_name: <?php echo json_encode($_POST['university_name'] ?? ''); ?>,
@@ -614,7 +610,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 club_affiliations: <?php echo json_encode(!empty($_POST['club_affiliations']) ? $_POST['club_affiliations'] : 'None'); ?>
             };
         <?php else: ?>
-            // 💼 Client Data
+            templateId = "template_n12y2xl";
             emailData = {
                 ...baseData,
                 business_name: <?php echo json_encode($_POST['business_name'] ?? ''); ?>,
