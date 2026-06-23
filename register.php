@@ -366,9 +366,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_verification'])
             </select>
         </div>
         <div class="section-divider"> Club Affiliation <span class="label-optional">Optional</span></div>
-        <div class="input-group" style="margin-bottom: 1.25rem;">
+        <div class="input-group">
             <label for="club_id">Select Club / Society</label>
-            <select name="club_id" id="club_id" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white;">
+            <select name="club_id" id="club_id">
                 <option value="">No Club (Independent Freelancer)</option>
                 <?php
                 $clubs_res = mysqli_query($conn, "SELECT id, club_name FROM clubs WHERE status = 'approved' ORDER BY club_name ASC");
@@ -380,9 +380,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_verification'])
                 ?>
             </select>
         </div>
-        <div class="input-group" id="club_code_group" style="display: none; margin-bottom: 1.25rem;">
+        <div class="input-group" id="club_code_group">
             <label for="club_code">Secret Club Access Code</label>
-            <input type="text" name="club_code" id="club_code" placeholder="Enter Club's Access Code" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" name="club_code" id="club_code" placeholder="Enter Club's Access Code">
             <small style="color: #718096; display: block; margin-top: 0.25rem;">To join this club, you must enter the secret access code provided by the club committee.</small>
         </div>
         <button type="submit" name="register_student_details" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1.5rem;">
