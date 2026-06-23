@@ -64,8 +64,8 @@ $saved_department=$profile_data['department']??'';
 <div class="container card fade-in" style="max-width:750px;margin:140px auto 40px;padding:2.5rem;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;">
     <h2 style="margin-bottom:1.5rem;font-size:1.8rem;font-weight:700;color:#fff;">Student Profile Management</h2>
     <a href="student-dashboard.php" style="display:inline-flex;align-items:center;gap:6px;color:var(--primary);text-decoration:none;font-weight:500;font-size:0.95rem;margin-bottom:1.5rem;"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-    <?php if(!empty($msg)): ?><div style="padding:.75rem 1rem;margin-bottom:1.5rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--primary);border-radius:8px;"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
-    <?php if(!empty($error_msg)): ?><div style="padding:.75rem 1rem;margin-bottom:1.5rem;color:#ef4444;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;"><?php echo htmlspecialchars($error_msg); ?></div><?php endif; ?>
+    <?php if(!empty($msg)): ?><div class="status-alert" style="padding:.75rem 1rem;margin-bottom:1.5rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--primary);border-radius:8px;"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
+    <?php if(!empty($error_msg)): ?><div class="status-alert" style="padding:.75rem 1rem;margin-bottom:1.5rem;color:#ef4444;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;"><?php echo htmlspecialchars($error_msg); ?></div><?php endif; ?>
 
     <form method="POST" style="margin-bottom:2.5rem;border-bottom:1px solid var(--border-color);padding-bottom:2rem;">
         <h3 style="color:var(--primary);margin-bottom:1.25rem;font-size:1.2rem;font-weight:600;">Academic &amp; Personal Info</h3>
