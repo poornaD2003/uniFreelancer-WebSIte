@@ -48,34 +48,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_club'])) {
 }
 ?>
 
-<div class="form-container card fade-in" style="max-width: 500px; margin: 120px auto 40px; padding: 2.5rem; background: #1a202c; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); color: white;">
-    <h2 style="margin-bottom: 0.5rem; font-size: 2rem; color: #fff;">Club Login</h2>
-    <p style="color: #a0aec0; margin-bottom: 2rem;">Log in to manage your University Club account.</p>
+<div class="form-container card fade-in" style="max-width: 500px; margin: 120px auto 40px; padding: 2.5rem;">
+    <h2 style="margin-bottom: 0.5rem; font-size: 2rem;">Club Login</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">Log in to manage your University Club account.</p>
 
     <?php if($error): ?>
-        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; color: #fca5a5;">
+        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; color: #fca5a5;">
             <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
 
     <form method="POST" action="login_club.php">
-        <div class="input-group" style="margin-bottom: 1.25rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #cbd5e0; font-weight: 600;">Club Username</label>
-            <input type="text" name="username" required placeholder="rotaract_colombo" value="<?php echo htmlspecialchars($username); ?>" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white;">
+        <div class="input-group">
+            <label>Club Username</label>
+            <input type="text" name="username" required placeholder="rotaract_colombo" value="<?php echo htmlspecialchars($username); ?>">
         </div>
 
-        <div class="input-group" style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #cbd5e0; font-weight: 600;">Password</label>
-            <input type="password" name="password" required placeholder="••••••••" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white;">
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" name="password" required placeholder="••••••••">
         </div>
 
-        <button type="submit" name="login_club" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem; border-radius: 8px; font-weight: bold; background: #7c3aed; color: white; border: none; cursor: pointer; transition: background 0.2s;">
+        <button type="submit" name="login_club" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem;">
             Login to Club Account
         </button>
     </form>
 
-    <p style="margin-top: 2rem; text-align: center; color: #a0aec0;">
-        Not registered yet? <a href="register_club.php" style="color: #7c3aed; font-weight: 600; text-decoration: none;">Register Your Club</a>
+    <p style="margin-top: 2rem; text-align: center; color: var(--text-muted);">
+        Not registered yet? <a href="register_club.php" style="color: var(--primary); font-weight: 600; text-decoration: none;">Register Your Club</a>
     </p>
 </div>
 
