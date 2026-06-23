@@ -11,10 +11,10 @@ $stats = [
     ["value" => "4.9",  "suffix" => "★",   "label" => "Client Rating"],
 ];
 $categories = [
-    ["icon" => "💻", "title" => "Development",  "desc" => "Web, Mobile & Software apps",    "count" => "142 gigs"],
-    ["icon" => "🎨", "title" => "Design",        "desc" => "UI/UX, Graphic & Branding",      "count" => "98 gigs"],
-    ["icon" => "✍️", "title" => "Writing",       "desc" => "Content, Copy & Research",       "count" => "76 gigs"],
-    ["icon" => "🎓", "title" => "Tutoring",      "desc" => "Academic help & Skill sharing",  "count" => "54 gigs"],
+    ["icon" => "💻", "title" => "Development",  "desc" => "Web, Mobile & Software apps"],
+    ["icon" => "🎨", "title" => "Design",        "desc" => "UI/UX, Graphic & Branding"],
+    ["icon" => "✍️", "title" => "Writing",       "desc" => "Content, Copy & Research"],
+    ["icon" => "🎓", "title" => "Tutoring",      "desc" => "Academic help & Skill sharing"],
 ];
 $featured_query = "
     SELECT u.id, u.fullname, u.profile_pic, sp.university_name, sp.faculty, sp.department, sp.club_affiliations,
@@ -29,6 +29,17 @@ $featured_query = "
 
 $featured_result = $conn->query($featured_query);
 
+$top_gigs_query = "
+    SELECT g.id,g.title,g.image, g.description, g.price, u.fullname, sp.university_name
+    FROM gigs g
+    JOIN users u ON g.student_id = u.id
+    JOIN student_profiles sp ON u.id = sp.user_id
+    WHERE g.status = 'approve'
+    ORDER BY g.created_at DESC
+    LIMIT 8
+";
+
+$top_gigs_result = $conn->query($top_gigs_query);
 
 $steps = [
     ["n"=>"01","icon"=>"🔍","title"=>"Post a Job",        "desc"=>"Describe your project, timeline, and budget in under 2 minutes."],
@@ -120,6 +131,92 @@ $steps = [
   </div>
 </div>
 
+<section class="section how-section" id="how">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="sec-tag">Top Gigs</span>
+      <h2 class="sec-title">Popular Gigs</h2>
+      <p class="sec-sub">Here are some of the best students on the platform.</p>
+    </div>
+    
+    <div class="freelancer-grid" style="margin-top: 3rem;">
+      <?php 
+      if ($top_gigs_result && $top_gigs_result->num_rows > 0): 
+        $j = 0;
+        while($g = $top_gigs_result->fetch_assoc()): 
+          // මිල ගණන් සහ විස්තර සකසා ගැනීම
+          $gig_price = ($g['price'] > 0) ? "Rs. " . number_format($g['price'], 0) : "Flexible";
+          $short_desc = (strlen($g['description']) > 90) ? mb_substr($g['description'], 0, 90) . '...' : $g['description'];
+          
+          // 🛠️ IMAGE FIX: SQL Query එකේ තියෙන g.image එකට අනුව පාර (Path) සකස් කිරීම
+          $img_path = (!empty($g['image']) && $g['image'] !== 'default.png')
+              ? "uploads/" . htmlspecialchars($g['image'])
+              : "images/hero_illustration.png"; // Image එකක් නැතිනම් වැටෙන Default පින්තූරය
+              
+          // Avatar එක සඳහා නමේ මුල් අකුර
+          $initial_name = !empty($g['fullname']) ? strtoupper(mb_substr($g['fullname'], 0, 1)) : "👤";
+      ?>
+        
+        <div class="gig-card reveal" style="transition-delay:<?= $j*0.1 ?>s">
+            <div class="card-img-wrap">
+                <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($g['title']); ?>" class="card-cover" style="width: 100%; height: 200px; object-fit: cover;">
+                <button class="heart-btn" aria-label="Save to favourites">
+                    <i class="far fa-heart"></i>
+                </button>
+            </div>
+
+            <div class="card-body">
+              
+                <a href="freelancer_gig.php?id=<?php echo $g['id']; ?>" style="text-decoration:none;">
+                    <h3 class="card-title" style="margin: 0.5rem 0; font-size: 16px; font-weight: 600; color: #333;">
+                        <?php echo htmlspecialchars($g['title']); ?>
+                    </h3>
+                </a>
+                
+                <p style="font-size: 13px; color: #666; line-height: 1.4; margin-bottom: 1rem;">
+                    <?php echo htmlspecialchars($short_desc); ?>
+                </p>
+
+                <div class="card-rating" style="margin-bottom: 1rem; font-size: 13px;">
+                    <span class="stars" style="color: #f1c40f;"><i class="fas fa-star"></i></span>
+                    <span class="rating-num" style="font-weight: 600;">4.8</span>
+                </div>
+
+                <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 0.75rem;">
+                    <div class="seller-info" style="display: flex; align-items: center; gap: 8px;">
+                        <div class="seller-av" style="width: 28px; height: 28px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
+                            <?php echo $initial_name; ?>
+                        </div>
+                        <span class="seller-name" style="font-size: 13px; font-weight: 500;">
+                            <?php echo htmlspecialchars($g['fullname']); ?>
+                            <i class="fas fa-check-circle verified" style="color: #3498db; font-size: 11px; margin-left: 2px;"></i>
+                        </span>
+                    </div>
+                    <div class="card-price" style="text-align: right;">
+                        <span class="price-label" style="display: block; font-size: 11px; color: #888;">Starting at</span>
+                        <span class="price-value" style="font-size: 15px; font-weight: 700; color: #2ecc71;"><?php echo $gig_price; ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+      <?php 
+        $j++;
+        endwhile; 
+      else:
+      ?>
+        <p style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No top active gigs found.</p>
+      <?php endif; ?>
+    </div>
+
+    <div style="text-align: center; margin-top: 3.5rem; margin-bottom: 3.5rem;">
+        <a href="jobs.php" class="btn-line" style="display: inline-block; padding: 12px 36px; text-decoration: none; font-weight: 600; font-size: 14.5px; transition: all 0.3s;">
+            Explore All Gigs <i class="ti ti-arrow-right" style="vertical-align: middle; margin-left: 4px;"></i>
+        </a>
+    </div>
+  </div>
+</section>
+
 <!-- ── CATEGORIES ── -->
 <section class="section" id="categories">
   <div class="section-inner">
@@ -135,7 +232,6 @@ $steps = [
           <div class="cat-emoji"><?= $c['icon'] ?></div>
           <h3><?= $c['title'] ?></h3>
           <p><?= $c['desc'] ?></p>
-          <span class="cat-count"><?= $c['count'] ?></span>
         </div>
       </a>
       <?php endforeach; ?>

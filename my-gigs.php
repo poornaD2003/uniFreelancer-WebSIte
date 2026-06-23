@@ -165,7 +165,6 @@ body {
 }
 
 .header-title {
-    font-family: 'Syne', sans-serif;
     font-size: 32px;
     font-weight: 800;
     color: var(--ink);
@@ -471,7 +470,7 @@ body {
         <div class="page-header">
             <div class="header-inner">
                 <br><br>
-                <h1 class="header-title">Reviews</h1>
+                <h1>Reviews</h1>
                 <p class="header-sub">Manage and respond to client reviews on your gigs</p>
             </div>
         </div>
