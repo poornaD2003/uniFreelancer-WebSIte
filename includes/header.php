@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include 'db.php';
+include 'db.php'; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,11 +18,10 @@ include 'db.php';
             align-items: center;
             gap: 15px;
         }
-      
     </style>
 </head>
 <body>
-    <nav>
+    <nav id="nav">
         <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
             <li><a href="student_freelancer_site.php">Home</a></li>
@@ -37,15 +36,24 @@ include 'db.php';
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
-                $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
+                
+                if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+                    $pure_filename = basename($_SESSION['profile_pic']); 
+                    $profile_pic = '/unilance/uploads/' . $pure_filename;
+                } else {
+                    $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                }
             ?>
-                <div class="nav-profile">
-                    <a href="<?php echo $profile_page; ?>" class="btn btn-outline">
-                       Profile
+                <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
+                    <a href="<?php echo $profile_page; ?>">
+                        <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
+                             alt="Profile Picture" 
+                             style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #7c3aed);"
+                             onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
-            <?php else: ?>
+            <?php else: ?>  
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
         </div>
