@@ -9,14 +9,27 @@ $msg = ""; $error_msg = ""; $show_step2 = false;
 $temp_title = ""; $temp_category = "Development"; $temp_price = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Step 1 → Step 2
     if (isset($_POST['submit_step1'])) {
-        $temp_title=trim($_POST['title']??''); $temp_category=trim($_POST['category']??'Development'); $temp_price=(float)($_POST['price']??0);
-        if(!empty($temp_title)&&$temp_price>0){$show_step2=true;}else{$error_msg="Please fill in all fields.";}
+        $temp_title    = trim($_POST['title'] ?? '');
+        $temp_category = trim($_POST['category'] ?? 'Development');
+        $temp_price    = (float)($_POST['price'] ?? 0);
+        if (!empty($temp_title) && $temp_price > 0) { $show_step2 = true; }
+        else { $error_msg = "Please fill in all fields."; }
     }
+
+    // Step 2 → Back to Step 1
     if (isset($_POST['back_to_step1'])) {
-        $temp_title=trim($_POST['title']??''); $temp_category=trim($_POST['category']??'Development'); $temp_price=(float)($_POST['price']??0); $show_step2=false;
+        $temp_title    = trim($_POST['title'] ?? '');
+        $temp_category = trim($_POST['category'] ?? 'Development');
+        $temp_price    = (float)($_POST['price'] ?? 0);
+        $show_step2    = false;
     }
+
+    // Post new gig (supports multiple images)
     if (isset($_POST['post_gig'])) {
+<<<<<<< Updated upstream
         $title=trim($_POST['title']??''); $category=trim($_POST['category']??'Development'); $price=(float)($_POST['price']??0); $desc=trim($_POST['description']??'');
 <<<<<<< Updated upstream
         if(!empty($title)&&!empty($desc)&&$price>0){
@@ -33,6 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 =======
         if(!empty($title) && !empty($desc) && $price > 0){
 >>>>>>> Stashed changes
+=======
+        $title    = trim($_POST['title'] ?? '');
+        $category = trim($_POST['category'] ?? 'Development');
+        $price    = (float)($_POST['price'] ?? 0);
+        $desc     = trim($_POST['description'] ?? '');
+
+        if (!empty($title) && !empty($desc) && $price > 0) {
+>>>>>>> Stashed changes
             $imgs = [];
             if (isset($_FILES['gig_images']) && is_array($_FILES['gig_images']['name'])) {
                 $total = count($_FILES['gig_images']['name']);
@@ -40,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($_FILES['gig_images']['error'][$i] === UPLOAD_ERR_OK) {
                         $ext = strtolower(pathinfo($_FILES['gig_images']['name'][$i], PATHINFO_EXTENSION));
                         if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                             $fname = uniqid('gig_', true) . '.' . $ext;
                             if (move_uploaded_file($_FILES['gig_images']['tmp_name'][$i], __DIR__ . '/uploads/' . $fname)) {
@@ -49,12 +71,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 >>>>>>> Stashed changes
 =======
+=======
+>>>>>>> Stashed changes
                             if (!is_dir(__DIR__ . '/uploads')) { mkdir(__DIR__ . '/uploads', 0777, true); }
                             $fname = uniqid('gig_', true) . '.' . $ext;
                             move_uploaded_file($_FILES['gig_images']['tmp_name'][$i], __DIR__ . '/uploads/' . $fname);
                             $imgs[] = $fname;
                         }
                     }
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
                 }
             }
@@ -62,8 +87,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $s=$conn->prepare("INSERT INTO gigs (student_id,title,image,description,price,category,status) VALUES(?,?,?,?,?,?,'pending')");
             if($s){$s->bind_param("isssds",$user_id,$title,$img_str,$desc,$price,$category);if($s->execute())$msg="✓ Gig posted! (Pending Approval)";else $error_msg="Failed to post.";$s->close();}
         } else { $error_msg="Please complete all fields."; }
+=======
+                }
+            }
+            $img_str = !empty($imgs) ? implode(',', $imgs) : 'default.png';
+            $s = $conn->prepare("INSERT INTO gigs (student_id,title,image,description,price,category,status) VALUES(?,?,?,?,?,?,'pending')");
+            if ($s) {
+                $s->bind_param("isssds", $user_id, $title, $img_str, $desc, $price, $category);
+                if ($s->execute()) $msg = "✓ Gig posted! (Pending Approval)";
+                else $error_msg = "Failed to post gig.";
+                $s->close();
+            }
+        } else { $error_msg = "Please complete all fields."; }
+>>>>>>> Stashed changes
     }
+
+    // Edit existing gig
     if (isset($_POST['edit_gig'])) {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
         $gid=(int)($_POST['gig_id']??0); $et=trim($_POST['e_title']??''); $ec=trim($_POST['e_category']??'Development'); $ep=(float)($_POST['e_price']??0); $ed=trim($_POST['e_description']??'');
@@ -96,12 +137,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ec  = trim($_POST['e_category'] ?? 'Development'); 
         $ep  = (float)($_POST['e_price'] ?? 0); 
 =======
+=======
+>>>>>>> Stashed changes
         $gid = (int)($_POST['gig_id'] ?? 0);
         $et  = trim($_POST['e_title'] ?? '');
         $ec  = trim($_POST['e_category'] ?? 'Development');
         $ep  = (float)($_POST['e_price'] ?? 0);
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
         $ed  = trim($_POST['e_description'] ?? '');
+=======
+        $ed  = trim($_POST['e_description'] ?? '');
+
+>>>>>>> Stashed changes
         if ($gid > 0 && !empty($et) && !empty($ed) && $ep > 0) {
             $s = $conn->prepare("SELECT image FROM gigs WHERE id=? AND student_id=? LIMIT 1");
             if ($s) {
@@ -110,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $chk = $s->get_result()->fetch_assoc();
                 $s->close();
                 if ($chk) {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                     $target_dir = __DIR__ . '/uploads/';
                     if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
@@ -229,12 +278,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $s = $conn->prepare("DELETE FROM gigs WHERE id=? AND student_id=?");
         if ($s) { $s->bind_param("ii", $gid, $user_id); if ($s->execute()) $msg = "✓ Gig deleted."; else $error_msg = "Delete failed."; $s->close(); }
+=======
+                    $img = $chk['image'];
+                    // Handle optional new images upload (multiple)
+                    if (isset($_FILES['e_gig_images']) && is_array($_FILES['e_gig_images']['name'])) {
+                        $newImgs = [];
+                        $target_dir = __DIR__ . '/uploads/';
+                        if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
+                        $total = count($_FILES['e_gig_images']['name']);
+                        for ($i = 0; $i < $total; $i++) {
+                            if ($_FILES['e_gig_images']['error'][$i] === UPLOAD_ERR_OK) {
+                                $ext = strtolower(pathinfo($_FILES['e_gig_images']['name'][$i], PATHINFO_EXTENSION));
+                                if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                                    $fname = uniqid('gig_', true) . '.' . $ext;
+                                    if (move_uploaded_file($_FILES['e_gig_images']['tmp_name'][$i], $target_dir . $fname)) {
+                                        $newImgs[] = $fname;
+                                    }
+                                }
+                            }
+                        }
+                        if (!empty($newImgs)) {
+                            // Delete old images before replacing
+                            foreach (explode(',', $img) as $oldImg) {
+                                $oldImg = trim($oldImg);
+                                if ($oldImg !== 'default.png' && file_exists($target_dir . $oldImg)) {
+                                    unlink($target_dir . $oldImg);
+                                }
+                            }
+                            $img = implode(',', $newImgs);
+                        }
+                    }
+                    if (empty($error_msg)) {
+                        $s = $conn->prepare("UPDATE gigs SET title=?, description=?, price=?, category=?, image=? WHERE id=? AND student_id=?");
+                        if ($s) {
+                            $s->bind_param("ssdssii", $et, $ed, $ep, $ec, $img, $gid, $user_id);
+                            if ($s->execute()) $msg = "✓ Gig updated successfully.";
+                            else $error_msg = "Update failed: " . $s->error;
+                            $s->close();
+                        }
+                    }
+                } else { $error_msg = "Gig not found."; }
+            }
+        } else { $error_msg = "Please fill all fields."; }
+    }
+
+    // Delete gig
+    if (isset($_POST['delete_gig'])) {
+        $gid = (int)$_POST['gig_id'];
+        $s = $conn->prepare("SELECT image FROM gigs WHERE id=? AND student_id=? LIMIT 1");
+        if ($s) {
+            $s->bind_param("ii", $gid, $user_id);
+            $s->execute();
+            $chk = $s->get_result()->fetch_assoc();
+            $s->close();
+            if ($chk) {
+                foreach (explode(',', $chk['image']) as $imgFile) {
+                    $imgFile = trim($imgFile);
+                    if ($imgFile !== 'default.png' && file_exists(__DIR__ . '/uploads/' . $imgFile)) {
+                        unlink(__DIR__ . '/uploads/' . $imgFile);
+                    }
+                }
+            }
+        }
+        $s = $conn->prepare("DELETE FROM gigs WHERE id=? AND student_id=?");
+        if ($s) {
+            $s->bind_param("ii", $gid, $user_id);
+            if ($s->execute()) $msg = "✓ Gig deleted.";
+            else $error_msg = "Delete failed.";
+            $s->close();
+        }
+>>>>>>> Stashed changes
     }
 }
 
-$gigs=[];
-$s=$conn->prepare("SELECT * FROM gigs WHERE student_id=? ORDER BY created_at DESC");
-if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r=$res->fetch_assoc())$gigs[]=$r;$s->close();}
+$gigs = [];
+$s = $conn->prepare("SELECT * FROM gigs WHERE student_id=? ORDER BY created_at DESC");
+if ($s) { $s->bind_param("i", $user_id); $s->execute(); $res = $s->get_result(); while ($r = $res->fetch_assoc()) $gigs[] = $r; $s->close(); }
 ?>
 <link rel="stylesheet" href="css/student.css">
 <div class="wrap">
@@ -246,15 +365,19 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
 <<<<<<< Updated upstream
 =======
         <a href="my-gigs.php"><i class="fas fa-tasks"></i> My Reviews</a>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     </nav></aside>
     <main class="main">
         <h1>Post a Service Gig</h1>
-        <?php if(!empty($msg)): ?><div style="background:rgba(16,185,129,.1);border:1px solid var(--primary);color:var(--primary);padding:1rem;border-radius:8px;margin-bottom:1rem;"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
-        <?php if(!empty($error_msg)): ?><div style="background:rgba(239,68,68,.1);border:1px solid #ef4444;color:#ef4444;padding:1rem;border-radius:8px;margin-bottom:1rem;"><?php echo htmlspecialchars($error_msg); ?></div><?php endif; ?>
+        <?php if (!empty($msg)): ?><div class="status-alert" style="background:rgba(16,185,129,.1);border:1px solid var(--primary);color:var(--primary);padding:.75rem 1rem;border-radius:8px;margin-bottom:1rem;"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
+        <?php if (!empty($error_msg)): ?><div class="status-alert" style="background:rgba(239,68,68,.1);border:1px solid #ef4444;color:#ef4444;padding:.75rem 1rem;border-radius:8px;margin-bottom:1rem;"><?php echo htmlspecialchars($error_msg); ?></div><?php endif; ?>
 
+        <!-- POST GIG FORM -->
         <div class="container">
-            <?php if(!$show_step2): ?>
+            <?php if (!$show_step2): ?>
                 <div class="step-progress"><div class="step-wrapper"><div class="step-bubble active">1</div><div class="step-label">Basic Info</div></div><div class="step-line"></div><div class="step-wrapper"><div class="step-bubble">2</div><div class="step-label">Description</div></div></div>
                 <div class="section-header"><i class="fas fa-info-circle"></i> Step 1: Gig Information</div>
                 <form method="POST" action="student-post-job.php">
@@ -270,11 +393,16 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                     <input type="hidden" name="title" value="<?php echo htmlspecialchars($temp_title); ?>">
                     <input type="hidden" name="category" value="<?php echo htmlspecialchars($temp_category); ?>">
                     <input type="hidden" name="price" value="<?php echo htmlspecialchars($temp_price); ?>">
+<<<<<<< Updated upstream
                     <div class="input-group"><label>Describe Your Service</label><textarea name="description" rows="6" placeholder="Describe what you offer, deliverables, timelines..." required></textarea></div>
 <<<<<<< Updated upstream
                     <div class="input-group"><label>Service Images (Optional, select multiple)</label><input type="file" name="gig_images[]" multiple accept="image/*"></div>
 =======
                     <div class="input-group"><label>Service Images (you can select multiple)</label><input type="file" name="gig_images[]" accept="image/*" multiple></div>
+>>>>>>> Stashed changes
+=======
+                    <div class="input-group"><label>Describe Your Service</label><textarea name="description" rows="5" placeholder="Describe what you offer, deliverables, timelines..." required></textarea></div>
+                    <div class="input-group"><label>Service Images — you can select multiple</label><input type="file" name="gig_images[]" accept="image/*" multiple></div>
 >>>>>>> Stashed changes
                     <div style="display:flex;gap:1rem;margin-top:.5rem;">
                         <button type="submit" name="back_to_step1" formnovalidate style="background:transparent;border:1px solid var(--border-color);color:var(--text-main);flex:1;">&larr; Back</button>
@@ -284,9 +412,11 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
             <?php endif; ?>
         </div>
 
+        <!-- GIG LIST -->
         <div class="container">
             <div class="section-header"><i class="fas fa-list-alt"></i> Your Active &amp; Pending Gigs</div>
             <div class="posts-list">
+<<<<<<< Updated upstream
                 <?php if(empty($gigs)): ?><p style="color:var(--text-muted);">No gigs posted yet.</p>
                 <?php else: foreach($gigs as $gig): ?>
                     <div class="post">
@@ -318,10 +448,30 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                                     ?>
                                     <div class="carousel-item<?php echo $idx === 0 ? ' active' : ''; ?>">
                                         <img src="<?php echo htmlspecialchars($srcImg); ?>" alt="Gig Image" />
+=======
+                <?php if (empty($gigs)): ?>
+                    <p style="color:var(--text-muted);">No gigs posted yet.</p>
+                <?php else: foreach ($gigs as $gig): ?>
+                    <div class="post">
+                        <div class="post-content">
+                            <!-- IMAGE CAROUSEL (left side) -->
+                            <div class="post-image">
+                                <?php
+                                    $imageList = array_filter(array_map('trim', explode(',', $gig['image'])));
+                                ?>
+                                <div class="carousel">
+                                    <?php foreach ($imageList as $idx => $imgFile):
+                                        $imgPath = __DIR__ . '/uploads/' . $imgFile;
+                                        $srcImg  = file_exists($imgPath) ? 'uploads/' . $imgFile : 'uploads/default.png';
+                                    ?>
+                                    <div class="carousel-item<?php echo $idx === 0 ? ' active' : ''; ?>">
+                                        <img src="<?php echo htmlspecialchars($srcImg); ?>" alt="Gig Image">
+>>>>>>> Stashed changes
                                     </div>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
+<<<<<<< Updated upstream
                             <div class="post-details">
                                 <div class="post-header">
                                     <div class="post-title"><?php echo htmlspecialchars($gig['title']); ?></div>
@@ -337,11 +487,40 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
                                     </form>
                                 </div>
 >>>>>>> Stashed changes
+=======
+
+                            <!-- DETAILS (right side) -->
+                            <div class="post-details">
+                                <div class="post-header">
+                                    <div class="post-title"><?php echo htmlspecialchars($gig['title']); ?></div>
+                                    <span class="badge badge-<?php echo $gig['status']; ?>"><?php echo $gig['status']==='approve' ? 'Approved' : 'Pending'; ?></span>
+                                </div>
+                                <div class="post-meta">
+                                    <strong>Category:</strong> <?php echo htmlspecialchars($gig['category']); ?>
+                                    &nbsp;|&nbsp; <strong>Price:</strong> Rs. <?php echo number_format($gig['price'], 2); ?>
+                                    &nbsp;|&nbsp; <strong>Created:</strong> <?php echo date('M d, Y', strtotime($gig['created_at'])); ?>
+                                </div>
+                                <div class="post-desc"><?php echo nl2br(htmlspecialchars($gig['description'])); ?></div>
+                                <div class="actions">
+                                    <button type="button" class="btn-small" onclick="toggleEdit(<?php echo $gig['id']; ?>)">
+                                        <i class="fas fa-pen"></i> Edit
+                                    </button>
+                                    <form method="POST" action="student-post-job.php" onsubmit="return confirm('Delete this gig?');" style="margin:0;">
+                                        <input type="hidden" name="gig_id" value="<?php echo $gig['id']; ?>">
+                                        <button type="submit" name="delete_gig" class="btn-small" style="background:#ef4444;color:#fff;border:none;">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+>>>>>>> Stashed changes
                             </div>
                         </div>
+
+                        <!-- EDIT PANEL (collapsible) -->
                         <div class="edit-panel" id="edit-panel-<?php echo $gig['id']; ?>">
                             <form method="POST" action="student-post-job.php" enctype="multipart/form-data">
                                 <input type="hidden" name="gig_id" value="<?php echo $gig['id']; ?>">
+<<<<<<< Updated upstream
                                 <label>Gig Title</label><input type="text" name="e_title" value="<?php echo htmlspecialchars($gig['title']); ?>" required>
                                 <label>Category</label><select name="e_category" required><?php foreach(['Development','Design','Writing','Tutoring','Other'] as $c): ?><option value="<?php echo $c; ?>"<?php echo $gig['category']===$c?' selected':''; ?>><?php echo $c; ?></option><?php endforeach; ?></select>
                                 <label>Price (LKR)</label><input type="number" step="0.01" min="1" name="e_price" value="<?php echo $gig['price']; ?>" required>
@@ -371,9 +550,29 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
 =======
                                 <label>Change Service Image (Optional)</label><input type="file" name="e_gig_image" accept="image/*" style="margin-bottom:1rem;">
 >>>>>>> Stashed changes
+=======
+                                <label>Gig Title</label>
+                                <input type="text" name="e_title" value="<?php echo htmlspecialchars($gig['title']); ?>" required>
+                                <label>Category</label>
+                                <select name="e_category" required>
+                                    <?php foreach(['Development','Design','Writing','Tutoring','Other'] as $c): ?>
+                                        <option value="<?php echo $c; ?>"<?php echo $gig['category']===$c?' selected':''; ?>><?php echo $c; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <label>Price (LKR)</label>
+                                <input type="number" step="0.01" min="1" name="e_price" value="<?php echo $gig['price']; ?>" required>
+                                <label>Description</label>
+                                <textarea name="e_description" rows="3" required><?php echo htmlspecialchars($gig['description']); ?></textarea>
+                                <label>Change Images (Optional — selecting new images replaces existing ones)</label>
+                                <input type="file" name="e_gig_images[]" accept="image/*" multiple style="margin-bottom:1rem;">
+>>>>>>> Stashed changes
                                 <div class="edit-actions">
-                                    <button type="submit" name="edit_gig" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:.75rem 1.5rem;cursor:pointer;font-weight:600;font-family:inherit;flex:1;"><i class="fas fa-save"></i> Save Changes</button>
-                                    <button type="button" onclick="toggleEdit(<?php echo $gig['id']; ?>)" style="background:transparent;border:1px solid var(--border-color);color:var(--text-main);border-radius:8px;padding:.75rem 1.5rem;cursor:pointer;font-weight:600;font-family:inherit;">Cancel</button>
+                                    <button type="submit" name="edit_gig" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:.6rem 1.2rem;cursor:pointer;font-weight:600;flex:1;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                    <button type="button" onclick="toggleEdit(<?php echo $gig['id']; ?>)" style="background:transparent;border:1px solid var(--border-color);color:var(--text-main);border-radius:8px;padding:.6rem 1.2rem;cursor:pointer;font-weight:600;">
+                                        Cancel
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -386,6 +585,7 @@ if($s){$s->bind_param("i",$user_id);$s->execute();$res=$s->get_result();while($r
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Sidebar active link
+<<<<<<< Updated upstream
     const currentPath = window.location.pathname.split('/').pop();
     document.querySelectorAll('.sidebar nav a').forEach(link => {
         if (link.getAttribute('href') === currentPath) {
@@ -412,6 +612,35 @@ document.addEventListener('DOMContentLoaded', () => {
             items[current].classList.remove('active');
             current = (current + 1) % items.length;
             items[current].classList.add('active');
+=======
+    const cur = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.sidebar nav a').forEach(a => {
+        if (a.getAttribute('href') === cur) {
+            document.querySelectorAll('.sidebar nav a').forEach(l => l.classList.remove('active'));
+            a.classList.add('active');
+        }
+    });
+
+    // Auto-dismiss alert messages
+    document.querySelectorAll('.main > div[style*="background"]').forEach(el => {
+        setTimeout(() => {
+            el.style.transition = 'opacity .5s';
+            el.style.opacity = '0';
+            setTimeout(() => el.style.display = 'none', 500);
+        }, 4000);
+    });
+
+    // Smooth cross-fade carousel — items stack via CSS position:absolute + opacity
+    document.querySelectorAll('.post-image .carousel').forEach(carousel => {
+        const items = carousel.querySelectorAll('.carousel-item');
+        if (items.length <= 1) return;
+        let current = 0;
+        setInterval(() => {
+            const next = (current + 1) % items.length;
+            items[next].classList.add('active');      // fade in next
+            items[current].classList.remove('active'); // fade out current
+            current = next;
+>>>>>>> Stashed changes
         }, 3000);
     });
 });

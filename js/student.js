@@ -13,8 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+<<<<<<< Updated upstream
     // 2. Auto-dismiss alert notification banners after 4 seconds
     const alerts = document.querySelectorAll('.main div[style*="background"]');
+=======
+    const alerts = document.querySelectorAll('.status-alert');
+>>>>>>> Stashed changes
     alerts.forEach(alert => {
         setTimeout(() => {
             alert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
