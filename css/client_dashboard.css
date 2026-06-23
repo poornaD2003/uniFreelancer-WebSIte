@@ -10,7 +10,6 @@
      background-color: var(--bg);
  }
 
- /* Sidebar Styles */
  .sidebar {
      width: 280px;
      background-color: var(--surface);
@@ -59,7 +58,6 @@
      color: var(--green);
  }
 
- /* Main Content Area */
  .main-content {
      flex: 1;
      padding: 2.5rem;
@@ -528,3 +526,4 @@
      font-style: italic;
      opacity: 0.6;
  }
+

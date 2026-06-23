@@ -25,15 +25,29 @@ CREATE TABLE IF NOT EXISTS gigs (
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS clubs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    club_name VARCHAR(255) NOT NULL,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    club_code VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    contribution_rate DECIMAL(5,2) DEFAULT 10.00,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS student_profiles (
     id                INT AUTO_INCREMENT PRIMARY KEY,
     user_id           INT NOT NULL UNIQUE,
     university_name   VARCHAR(200) NOT NULL,
     faculty           VARCHAR(150) NOT NULL,
     department        VARCHAR(150) NOT NULL,
+    club_id           INT DEFAULT NULL,
     club_affiliations TEXT,
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS client_profiles (
@@ -89,4 +103,15 @@ CREATE TABLE IF NOT EXISTS order_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(orderId) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS club_ledger (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    club_id INT NOT NULL,
+    payment_id INT DEFAULT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    description VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+    FOREIGN KEY (payment_id) REFERENCES payment(paymentId) ON DELETE SET NULL
 );

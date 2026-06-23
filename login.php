@@ -86,6 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     <p style="margin-top: 2rem; text-align: center; color: var(--text-muted);">
         Don't have an account? <a href="register.php" style="color: var(--primary);">Register Now</a>
     </p>
+    <p style="margin-top: 0.5rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+        Are you a University Club? <a href="register_club.php" style="color: var(--primary); text-decoration: none;">Register Club</a> | <a href="login_club.php" style="color: var(--primary); text-decoration: none;">Club Login</a>
+    </p>
 </div>
 
 <?php include 'includes/footer.php'; ?>

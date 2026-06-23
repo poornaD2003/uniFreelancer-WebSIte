@@ -90,7 +90,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt2->execute();
         $stmt2->close();
         
-        $msg = "Profile updated successfully!";
+        // Fetch current profile to check if they are already in a club
+        $stmtProfileCheck = $conn->prepare("SELECT club_id, club_affiliations FROM student_profiles WHERE user_id = ? LIMIT 1");
+        $club_id = null;
+        $club_affiliations = "";
+        
+        if ($stmtProfileCheck) {
+            $stmtProfileCheck->bind_param("i", $user_id);
+            $stmtProfileCheck->execute();
+            $current_profile = $stmtProfileCheck->get_result()->fetch_assoc();
+            $stmtProfileCheck->close();
+            
+            if ($current_profile) {
+                $club_id = $current_profile['club_id'];
+                $club_affiliations = $current_profile['club_affiliations'];
+            }
+        }
+
+        $club_update_success = true;
+
+        if (isset($_POST['leave_club']) && $_POST['leave_club'] == '1') {
+            $club_id = null;
+            $club_affiliations = '';
+        } elseif ($club_id === null && isset($_POST['club_id']) && $_POST['club_id'] !== "") {
+            $join_club_id = (int)$_POST['club_id'];
+            $join_club_code = isset($_POST['club_code']) ? trim($_POST['club_code']) : "";
+
+            $club_check = $conn->prepare("SELECT club_name, club_code FROM clubs WHERE id = ? AND status = 'approved' LIMIT 1");
+            if ($club_check) {
+                $club_check->bind_param("i", $join_club_id);
+                $club_check->execute();
+                $club_res = $club_check->get_result()->fetch_assoc();
+                $club_check->close();
+
+                if (!$club_res) {
+                    $error_msg = "Selected club is invalid or not approved yet.";
+                    $club_update_success = false;
+                } elseif ($club_res['club_code'] !== $join_club_code) {
+                    $error_msg = "Incorrect secret access code for the selected club.";
+                    $club_update_success = false;
+                } else {
+                    $club_id = $join_club_id;
+                    $club_affiliations = $club_res['club_name'];
+                }
+            } else {
+                $error_msg = "Failed to query club database.";
+                $club_update_success = false;
+            }
+        }
+
+        if ($club_update_success) {
+            $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
+            $stmt1->bind_param("si", $fullname, $user_id);
+            $stmt1->execute();
+            $stmt1->close();
+
+            $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_id, club_affiliations) 
+                                    VALUES (?, ?, ?, ?, ?, ?) 
+                                    ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_id = ?, club_affiliations = ?");
+            $stmt2->bind_param("isssissssis", $user_id, $uni_name, $faculty, $dept, $club_id, $club_affiliations, $uni_name, $faculty, $dept, $club_id, $club_affiliations);
+            $stmt2->execute();
+            $stmt2->close();
+            
+            $msg = "Profile updated successfully!";
+        }
     }
 
     if (isset($_POST['change_password'])) {
@@ -150,7 +213,21 @@ $profile_data = $stmtProfile->get_result()->fetch_assoc();
 $stmtProfile->close();
 
 if (!$profile_data) {
-    $profile_data = ['university_name'=>'', 'faculty'=>'', 'department'=>'', 'club_affiliations'=>''];
+    $profile_data = ['university_name'=>'', 'faculty'=>'', 'department'=>'', 'club_id'=>null, 'club_affiliations'=>''];
+}
+
+$current_club_name = "";
+if (!empty($profile_data['club_id'])) {
+    $club_q = $conn->prepare("SELECT club_name FROM clubs WHERE id = ?");
+    if ($club_q) {
+        $club_q->bind_param("i", $profile_data['club_id']);
+        $club_q->execute();
+        $club_res = $club_q->get_result()->fetch_assoc();
+        if ($club_res) {
+            $current_club_name = $club_res['club_name'];
+        }
+        $club_q->close();
+    }
 }
 
 $stmtSkills = $conn->prepare("SELECT * FROM student_skills WHERE user_id = ?");
@@ -253,10 +330,40 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
             </select>
         </div>
         
-        <div class="input-group">
-            <label>Club Affiliations</label>
-            <textarea name="club_affiliations" style="min-height: 90px; resize: vertical;"><?php echo htmlspecialchars($profile_data['club_affiliations'] ?? ''); ?></textarea>
-        </div>
+        <?php if (!empty($profile_data['club_id'])): ?>
+            <div class="input-group" style="margin-bottom: 1.5rem;">
+                <label>Club Affiliation</label>
+                <div style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                    <div>
+                        <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; margin-bottom: 2px;">Current Active Club</span>
+                        <strong style="font-size: 1.05rem; color: var(--text-main);"><i class="fas fa-users" style="color: var(--primary); margin-right: 6px;"></i> <?php echo htmlspecialchars($current_club_name); ?></strong>
+                    </div>
+                    <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #f87171; font-weight: 600; font-size: 0.85rem; margin-bottom: 0;">
+                        <input type="checkbox" name="leave_club" value="1" style="width: auto; height: auto;"> Leave Club
+                    </label>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="input-group" style="margin-bottom: 1.25rem;">
+                <label for="club_id">Join Club / Society</label>
+                <select name="club_id" id="club_id" style="width: 100%;">
+                    <option value="">-- No Club (Independent Freelancer) --</option>
+                    <?php
+                    $clubs_res = mysqli_query($conn, "SELECT id, club_name FROM clubs WHERE status = 'approved' ORDER BY club_name ASC");
+                    if ($clubs_res) {
+                        while ($club = mysqli_fetch_assoc($clubs_res)) {
+                            echo '<option value="' . htmlspecialchars($club['id']) . '">' . htmlspecialchars($club['club_name']) . '</option>';
+                        }
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="input-group" id="club_code_group" style="display: none; margin-bottom: 1.5rem;">
+                <label for="club_code">Secret Club Access Code</label>
+                <input type="text" name="club_code" id="club_code" placeholder="Enter Club's Access Code">
+                <small style="color: var(--text-muted); display: block; margin-top: 0.3rem; font-size: 0.75rem;">Enter the verification code to join this club.</small>
+            </div>
+        <?php endif; ?>
         
         <button type="submit" name="update_profile" class="btn btn-primary">Save Changes</button>
     </form>
@@ -355,6 +462,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         facultySelect.addEventListener("change", loadDepartments);
         loadDepartments();
+    }
+
+    const clubSelect = document.getElementById("club_id");
+    const clubCodeGroup = document.getElementById("club_code_group");
+    const clubCodeInput = document.getElementById("club_code");
+    
+    if (clubSelect && clubCodeGroup) {
+        clubSelect.addEventListener("change", function () {
+            if (this.value !== "") {
+                clubCodeGroup.style.display = "block";
+                clubCodeInput.required = true;
+            } else {
+                clubCodeGroup.style.display = "none";
+                clubCodeInput.required = false;
+                clubCodeInput.value = "";
+            }
+        });
     }
 });
 </script>

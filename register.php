@@ -56,24 +56,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
     $university_name  = trim($_POST['university_name']);
     $faculty          = trim($_POST['faculty']);
     $department       = trim($_POST['department']);
-    $club_affiliations = trim($_POST['club_affiliations'] ?? '');
+    $club_id          = isset($_POST['club_id']) && $_POST['club_id'] !== "" ? (int)$_POST['club_id'] : null;
+    $club_code        = isset($_POST['club_code']) ? trim($_POST['club_code']) : "";
+    $club_affiliations = ""; // For backwards compatibility
     $fullname         = trim($_POST['fullname'] ?? '');
     $email            = trim($_POST['email'] ?? '');
     $role             = 'student';
 
-    if (empty($university_name) || empty($faculty) || empty($department)) {
+    $club_valid = true;
+    if ($club_id !== null) {
+        $club_check = $conn->prepare("SELECT club_name, club_code FROM clubs WHERE id = ? AND status = 'approved' LIMIT 1");
+        if ($club_check) {
+            $club_check->bind_param("i", $club_id);
+            $club_check->execute();
+            $club_res = $club_check->get_result()->fetch_assoc();
+            $club_check->close();
+            
+            if (!$club_res) {
+                $error = "Selected club is invalid or not approved yet.";
+                $club_valid = false;
+            } elseif ($club_res['club_code'] !== $club_code) {
+                $error = "Incorrect secret access code for the selected club.";
+                $club_valid = false;
+            } else {
+                $club_affiliations = $club_res['club_name'];
+            }
+        } else {
+            $error = "Failed to query club database.";
+            $club_valid = false;
+        }
+    }
+
+    if (!$club_valid) {
+        $show_student_step2 = true;
+        $step2_user_id = $user_id;
+    } elseif (empty($university_name) || empty($faculty) || empty($department)) {
         $error = "Please fill in all required university fields.";
         $show_student_step2 = true;
         $step2_user_id = $user_id;
     } else {
-        $query = "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations)
-                  VALUES (?, ?, ?, ?, ?)
-                  ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_affiliations = ?";
+        $query = "INSERT INTO student_profiles (user_id, university_name, faculty, department, club_id, club_affiliations)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_id = ?, club_affiliations = ?";
        
         if ($stmt = mysqli_prepare($conn, $query)) {
-            mysqli_stmt_bind_param($stmt, "issssssss", 
-                $user_id, $university_name, $faculty, $department, $club_affiliations, 
-                $university_name, $faculty, $department, $club_affiliations     
+            mysqli_stmt_bind_param($stmt, "isssissssis", 
+                $user_id, $university_name, $faculty, $department, $club_id, $club_affiliations, 
+                $university_name, $faculty, $department, $club_id, $club_affiliations     
             );
             
             if (mysqli_stmt_execute($stmt)) {
@@ -282,6 +311,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_verification'])
     <p style="margin-top: 2rem; text-align: center; color: var(--text-muted);">
         Already have an account? <a href="login.php" style="color: var(--primary);">Login</a>
     </p>
+    <p style="margin-top: 0.5rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+        Are you a University Club? <a href="register_club.php" style="color: var(--primary); text-decoration: none;">Register Club</a> | <a href="login_club.php" style="color: var(--primary); text-decoration: none;">Club Login</a>
+    </p>
     <?php endif; ?>
 
     <?php if (isset($show_student_step2)): ?>
@@ -333,10 +365,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_verification'])
                 <option value="">Select Department</option>
             </select>
         </div>
-        <div class="section-divider"> Club Affiliations <span class="label-optional">Optional</span></div>
+        <div class="section-divider"> Club Affiliation <span class="label-optional">Optional</span></div>
         <div class="input-group">
-            <label for="club_affiliations">Club / Society Memberships</label>
-            <input type="text" name="club_affiliations" id="club_affiliations" placeholder="e.g. Rotaract Club, IEEE Student Branch">
+            <label for="club_id">Select Club / Society</label>
+            <select name="club_id" id="club_id">
+                <option value="">No Club (Independent Freelancer)</option>
+                <?php
+                $clubs_res = mysqli_query($conn, "SELECT id, club_name FROM clubs WHERE status = 'approved' ORDER BY club_name ASC");
+                if ($clubs_res) {
+                    while ($club = mysqli_fetch_assoc($clubs_res)) {
+                        echo '<option value="' . htmlspecialchars($club['id']) . '">' . htmlspecialchars($club['club_name']) . '</option>';
+                    }
+                }
+                ?>
+            </select>
+        </div>
+        <div class="input-group" id="club_code_group">
+            <label for="club_code">Secret Club Access Code</label>
+            <input type="text" name="club_code" id="club_code" placeholder="Enter Club's Access Code">
+            <small style="color: #718096; display: block; margin-top: 0.25rem;">To join this club, you must enter the secret access code provided by the club committee.</small>
         </div>
         <button type="submit" name="register_student_details" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1.5rem;">
             Next Step &rarr;
@@ -489,6 +536,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     option.textContent = dept;
                     departmentSelect.appendChild(option);
                 });
+            }
+        });
+    }
+
+    const clubSelect = document.getElementById("club_id");
+    const clubCodeGroup = document.getElementById("club_code_group");
+    const clubCodeInput = document.getElementById("club_code");
+    
+    if (clubSelect && clubCodeGroup) {
+        clubSelect.addEventListener("change", function () {
+            if (this.value !== "") {
+                clubCodeGroup.style.display = "block";
+                clubCodeInput.required = true;
+            } else {
+                clubCodeGroup.style.display = "none";
+                clubCodeInput.required = false;
+                clubCodeInput.value = "";
             }
         });
     }
