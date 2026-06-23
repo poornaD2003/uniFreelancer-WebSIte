@@ -26,7 +26,10 @@ include 'db.php';
         <ul class="nav-links">
             <li><a href="student_freelancer_site.php">Home</a></li>
             <li><a href="jobs.php">Browse Jobs</a></li>
-            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
+                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+                <li><a href="admin_approve.php">Approvals</a></li>
+            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
                  <li><a href="student-post-job.php">Post a Gig</a></li>
@@ -35,7 +38,13 @@ include 'db.php';
         </ul>
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
-                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
+                if ($_SESSION['role'] === 'student') {
+                    $profile_page = 'studentProfile.php';
+                } elseif ($_SESSION['role'] === 'client') {
+                    $profile_page = 'clientProfile.php';
+                } else {
+                    $profile_page = 'admin_dashboard.php';
+                }
                 
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
