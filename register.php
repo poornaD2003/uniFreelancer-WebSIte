@@ -8,13 +8,18 @@ include 'includes/header.php';
 
 $error   = "";
 $success = "";
-
+$fullname = "";
+$email = "";
+$role = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_details'])) {
     $user_id           = (int) $_POST['user_id'];
     $university_name  = trim($_POST['university_name']);
     $faculty          = trim($_POST['faculty']);
     $department       = trim($_POST['department']);
     $club_affiliations = trim($_POST['club_affiliations'] ?? '');
+    $fullname = trim($_POST['fullname'] ?? '');
+    $email    = trim($_POST['email'] ?? '');
+    $role     = 'student';
 
     if (empty($university_name) || empty($faculty) || empty($department)) {
         $error = "Please fill in all required university fields.";
@@ -28,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
                     faculty           = ?,
                     department        = ?,
                     club_affiliations = ?";
+       
                     
         if ($stmt = mysqli_prepare($conn, $query)) {
             mysqli_stmt_bind_param($stmt, "issssssss", 
@@ -37,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
             
             if (mysqli_stmt_execute($stmt)) {
                 $success = "Registration complete! Your profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+                $step2_user_id = $user_id;
+                  
             } else {
                 $error = "Something went wrong saving your university details. Please try again.";
                 $show_student_step2 = true;
@@ -53,6 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
     $business_type    = trim($_POST['business_type']);
     $business_phone   = trim($_POST['business_phone']);
     $business_address = trim($_POST['business_address'] ?? '');
+    // Hidden fields මඟින් එන දත්ත ලබා ගැනීම
+    $fullname = trim($_POST['fullname'] ?? '');
+    $email    = trim($_POST['email'] ?? '');
+    $role     = 'client';
 
     if (empty($business_name) || empty($business_type) || empty($business_phone)) {
         $error = "Please fill in all required business fields.";
@@ -66,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
                     business_type    = ?,
                     business_phone   = ?,
                     business_address = ?";
+            
                     
         if ($stmt = mysqli_prepare($conn, $query)) {
             mysqli_stmt_bind_param($stmt, "issssssss", 
@@ -75,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_client_detail
             
             if (mysqli_stmt_execute($stmt)) {
                 $success = "Registration complete! Your business profile has been submitted for review. Once the administrator approves your account, you will be able to log in.";
+                $step2_user_id = $user_id;
             } else {
                 $error = "Something went wrong saving your business details. Please try again.";
                 $show_client_step2 = true;
@@ -338,6 +352,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
     <form method="POST" action="register.php" id="step2-student-form">
         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($step2_user_id); ?>">
+        <input type="hidden" name="fullname" value="<?php echo htmlspecialchars($fullname ?? ''); ?>">
+        <input type="hidden" name="email" value="<?php echo htmlspecialchars($email ?? ''); ?>">
 
         <div class="section-divider">🏫 Academic Information</div>
 
@@ -427,6 +443,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 
     <form method="POST" action="register.php" id="step2-client-form">
         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($step2_user_id); ?>">
+        <input type="hidden" name="fullname" value="<?php echo htmlspecialchars($fullname ?? ''); ?>">
+        <input type="hidden" name="email" value="<?php echo htmlspecialchars($email ?? ''); ?>">
 
         <div class="section-divider">💼 Company Information</div>
 
@@ -453,7 +471,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
         <button type="submit" name="register_client_details" id="btn-finish-client"
                 class="btn btn-primary"
                 style="width: 100%; justify-content: center; margin-top: 1.5rem;">
-            ✓ Submit For Approval
+             Submit For Approval
         </button>
     </form>
 
@@ -517,7 +535,7 @@ const departmentsByFaculty = {
 document.addEventListener("DOMContentLoaded", function () {
     const facultySelect = document.getElementById("faculty");
     const departmentSelect = document.getElementById("department");
-    const business_phone = document.getElementById("business_phone");
+    const phoneInput = document.getElementById("business_phone");
     const clientForm =  document.getElementById("step2-client-form");
 
     if (clientForm && phoneInput) {
@@ -559,6 +577,61 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+});
+</script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+(function() {
+    emailjs.init({
+        publicKey: "3pyyUP6Nss7of-wFs", 
+    });
+})();
+
+document.addEventListener("DOMContentLoaded", function () {
+    
+    // PHP මඟින් දත්ත සාර්ථකව සේව් වූ බව තහවුරු කළ විට පමණක් ක්‍රියාත්මක වේ
+    <?php if ($success && (isset($_POST['register_student_details']) || isset($_POST['register_client_details']))): ?>
+        
+        //let roleType = "<?php echo isset($_POST['role']) ? $_POST['role'] : (isset($role) ? $role : ''); ?>";
+        let templateId = "template_6o00nsh";
+        let emailData = {};
+
+        // පොදු ගිණුම් විස්තර (Account Info)
+       let baseData = {
+            fullname: <?php echo json_encode($_POST['fullname'] ?? $fullname ?? 'N/A'); ?>,
+            email: <?php echo json_encode($_POST['email'] ?? $email ?? 'N/A'); ?>,
+            user_id: <?php echo json_encode($step2_user_id ?? ''); ?>
+        };
+
+        // 3. Role එක අනුව දත්ත සහ අදාළ Template ID එක වෙන් කර ගැනීම
+        <?php if (isset($_POST['register_student_details'])): ?>
+            // 🎓 Student Data
+            emailData = {
+                ...baseData,
+                university_name: <?php echo json_encode($_POST['university_name'] ?? ''); ?>,
+                faculty: <?php echo json_encode($_POST['faculty'] ?? ''); ?>,
+                department: <?php echo json_encode($_POST['department'] ?? ''); ?>,
+                club_affiliations: <?php echo json_encode(!empty($_POST['club_affiliations']) ? $_POST['club_affiliations'] : 'None'); ?>
+            };
+        <?php else: ?>
+            // 💼 Client Data
+            emailData = {
+                ...baseData,
+                business_name: <?php echo json_encode($_POST['business_name'] ?? ''); ?>,
+                business_type: <?php echo json_encode($_POST['business_type'] ?? ''); ?>,
+                business_phone: <?php echo json_encode($_POST['business_phone'] ?? ''); ?>,
+                business_address: <?php echo json_encode(!empty($_POST['business_address']) ? $_POST['business_address'] : 'Not Provided'); ?>
+            };
+        <?php endif; ?>
+
+        emailjs.send('service_adcclwr', templateId, emailData)
+            .then(function(response) {
+                console.log('HTML email notification sent to Admin successfully!', response.status, response.text);
+            }, function(error) {
+                console.error('EmailJS trigger failed:', error);
+            });
+
+    <?php endif; ?>
 });
 </script>
 
