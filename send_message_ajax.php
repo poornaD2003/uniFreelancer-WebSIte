@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 // 1. පරිශීලකයා ලොග් වී ඇත්දැයි බැලීම
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
+    echo json_encode(['status' => 'error', 'message' => 'Unauthorized access.']);
     exit();
 }
 
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $file_path = null;
 
     if ($order_id <= 0 || ($message === '' && empty($_FILES['attachment']['name']))) {
-        echo json_encode(['success' => false, 'error' => 'Message or attachment is required.']);
+        echo json_encode(['status' => 'error', 'message' => 'Message or attachment is required.']);
         exit();
     }
 
@@ -41,15 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($stmt) {
         $stmt->bind_param("iiss", $order_id, $user_id, $message, $file_path);
         if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
+            $msg_id = mysqli_insert_id($conn);
+            $response_data = [
+                'id' => $msg_id,
+                'sender_id' => $user_id,
+                'fullname' => $_SESSION['fullname'] ?? 'Me',
+                'message' => $message,
+                'file_path' => $file_path,
+                'sent_at' => date('M d, g:i A')
+            ];
+            echo json_encode([
+                'status' => 'success',
+                'data' => $response_data
+            ]);
         } else {
-            echo json_encode(['success' => false, 'error' => 'Database error: Unable to send message.']);
+            echo json_encode(['status' => 'error', 'message' => 'Database error: Unable to send message.']);
         }
         $stmt->close();
     } else {
-        echo json_encode(['success' => false, 'error' => 'Failed to prepare database query.']);
+        echo json_encode(['status' => 'error', 'message' => 'Failed to prepare database query.']);
     }
 } else {
-    echo json_encode(['success' => false, 'error' => 'Invalid request method.']);
+    echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
 }
 ?>
