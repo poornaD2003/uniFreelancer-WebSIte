@@ -70,4 +70,19 @@ try {
 } catch (PDOException $e) {
     die("Database connection failed (PDO): " . $e->getMessage());
 }
+
+// Dynamic migrations to add profile fields if they don't exist
+function add_column_if_not_exists($conn, $table, $column, $definition) {
+    $result = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+    if ($result && mysqli_num_rows($result) === 0) {
+        mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+    }
+}
+
+add_column_if_not_exists($conn, 'student_profiles', 'location', "VARCHAR(100) DEFAULT 'Sri Lanka'");
+add_column_if_not_exists($conn, 'student_profiles', 'gender', "VARCHAR(50) DEFAULT 'Not Specified'");
+add_column_if_not_exists($conn, 'student_profiles', 'languages', "VARCHAR(255) DEFAULT 'English, Sinhala'");
+add_column_if_not_exists($conn, 'student_profiles', 'english_level', "VARCHAR(100) DEFAULT 'Professional'");
+add_column_if_not_exists($conn, 'student_profiles', 'description', "TEXT DEFAULT NULL");
+add_column_if_not_exists($conn, 'student_profiles', 'education', "VARCHAR(255) DEFAULT NULL");
 ?>

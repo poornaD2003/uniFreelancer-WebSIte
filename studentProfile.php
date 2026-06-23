@@ -74,6 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $faculty = $_POST['faculty'] ?? '';
         $dept = $_POST['department'] ?? '';
         $clubs = trim($_POST['club_affiliations']);
+        $location = trim($_POST['location'] ?? 'Sri Lanka');
+        $gender = trim($_POST['gender'] ?? 'Not Specified');
+        $languages = trim($_POST['languages'] ?? 'English, Sinhala');
+        $english_level = trim($_POST['english_level'] ?? 'Professional');
+        $description = trim($_POST['description'] ?? '');
+        $education = trim($_POST['education'] ?? '');
 
         $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
         $stmt1->bind_param("si", $fullname, $user_id);
@@ -83,10 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Header එකේ fullname එකත් update වීමට
         $_SESSION['fullname'] = $fullname;
 
-        $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations) 
-                                VALUES (?, ?, ?, ?, ?) 
-                                ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_affiliations = ?");
-        $stmt2->bind_param("issssssss", $user_id, $uni_name, $faculty, $dept, $clubs, $uni_name, $faculty, $dept, $clubs);
+        $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations, location, gender, languages, english_level, description, education) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                                ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_affiliations = ?, location = ?, gender = ?, languages = ?, english_level = ?, description = ?, education = ?");
+        $stmt2->bind_param("issssssssssssssssssss", $user_id, $uni_name, $faculty, $dept, $clubs, $location, $gender, $languages, $english_level, $description, $education, $uni_name, $faculty, $dept, $clubs, $location, $gender, $languages, $english_level, $description, $education);
         $stmt2->execute();
         $stmt2->close();
         
@@ -150,7 +156,10 @@ $profile_data = $stmtProfile->get_result()->fetch_assoc();
 $stmtProfile->close();
 
 if (!$profile_data) {
-    $profile_data = ['university_name'=>'', 'faculty'=>'', 'department'=>'', 'club_affiliations'=>''];
+    $profile_data = [
+        'university_name'=>'', 'faculty'=>'', 'department'=>'', 'club_affiliations'=>'',
+        'location'=>'', 'gender'=>'', 'languages'=>'', 'english_level'=>'', 'description'=>'', 'education'=>''
+    ];
 }
 
 $stmtSkills = $conn->prepare("SELECT * FROM student_skills WHERE user_id = ?");
@@ -256,6 +265,46 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
         <div class="input-group">
             <label>Club Affiliations</label>
             <textarea name="club_affiliations" style="min-height: 90px; resize: vertical;"><?php echo htmlspecialchars($profile_data['club_affiliations'] ?? ''); ?></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>Location</label>
+            <input type="text" name="location" value="<?php echo htmlspecialchars($profile_data['location'] ?? 'Sri Lanka'); ?>">
+        </div>
+
+        <div class="input-group">
+            <label>Gender</label>
+            <select name="gender">
+                <option value="Not Specified" <?php echo (($profile_data['gender'] ?? 'Not Specified') === 'Not Specified') ? 'selected' : ''; ?>>Not Specified</option>
+                <option value="Male" <?php echo (($profile_data['gender'] ?? '') === 'Male') ? 'selected' : ''; ?>>Male</option>
+                <option value="Female" <?php echo (($profile_data['gender'] ?? '') === 'Female') ? 'selected' : ''; ?>>Female</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Languages</label>
+            <input type="text" name="languages" value="<?php echo htmlspecialchars($profile_data['languages'] ?? 'English, Sinhala'); ?>">
+        </div>
+
+        <div class="input-group">
+            <label>English Level</label>
+            <select name="english_level">
+                <option value="Professional" <?php echo (($profile_data['english_level'] ?? 'Professional') === 'Professional') ? 'selected' : ''; ?>>Professional</option>
+                <option value="Native or Bilingual" <?php echo (($profile_data['english_level'] ?? '') === 'Native or Bilingual') ? 'selected' : ''; ?>>Native or Bilingual</option>
+                <option value="Fluent" <?php echo (($profile_data['english_level'] ?? '') === 'Fluent') ? 'selected' : ''; ?>>Fluent</option>
+                <option value="Conversational" <?php echo (($profile_data['english_level'] ?? '') === 'Conversational') ? 'selected' : ''; ?>>Conversational</option>
+                <option value="Basic" <?php echo (($profile_data['english_level'] ?? '') === 'Basic') ? 'selected' : ''; ?>>Basic</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Education (Degree / Qualification Details)</label>
+            <input type="text" name="education" value="<?php echo htmlspecialchars($profile_data['education'] ?? ''); ?>" placeholder="e.g. BSc (Hons) in Computer Science (Ongoing)">
+        </div>
+
+        <div class="input-group">
+            <label>Professional Bio / Description</label>
+            <textarea name="description" style="min-height: 120px; resize: vertical;" placeholder="Describe your experience, technical profile, and focus area..."><?php echo htmlspecialchars($profile_data['description'] ?? ''); ?></textarea>
         </div>
         
         <button type="submit" name="update_profile" class="btn btn-primary">Save Changes</button>

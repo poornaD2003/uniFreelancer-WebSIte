@@ -1,8 +1,15 @@
 :root {
+<<<<<<< HEAD
     --hero-start: #10b981;
     --hero-mid: #059669;
     --hero-end: #243e2b;
     --accent: #10b981;
+=======
+    --hero-start: #0f0c29;
+    --hero-mid: #302b63;
+    --hero-end: #24243e;
+    --accent: #7c3aed;
+>>>>>>> ef07652 (Implement freelancer public profile, directory search, settings, and dashboard routing)
     --accent-soft: rgba(124, 58, 237, .12);
     --cta: #10b981;
     --cta-hover: #059669;
@@ -123,8 +130,13 @@ body {
     align-items: center;
     gap: 6px;
     background: var(--accent-soft);
+<<<<<<< HEAD
     border: 1px solid rgba(58, 237, 88, 0.3);
     color: #8bfad9;
+=======
+    border: 1px solid rgba(124, 58, 237, .3);
+    color: #a78bfa;
+>>>>>>> ef07652 (Implement freelancer public profile, directory search, settings, and dashboard routing)
     padding: 5px 14px;
     border-radius: 30px;
     font-size: 11px;
@@ -439,7 +451,11 @@ body {
 }
 
 .btn-login:hover {
+<<<<<<< HEAD
     background: #34d399;
+=======
+    background: #6d28d9;
+>>>>>>> ef07652 (Implement freelancer public profile, directory search, settings, and dashboard routing)
     transform: translateY(-2px);
 }
 
