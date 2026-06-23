@@ -24,7 +24,7 @@ function switchMethod(method) {
         document.getElementById('card_section').classList.add('active');
         document.getElementById('payment_method_input').value = 'card';
         document.getElementById('btnText').innerText =
-            "Pay Rs. " + (window.paymentAmountFormatted || "");
+            "Pay Rs. <?php echo number_format($total_amount, 2); ?>";
     } else {
         document.querySelectorAll('.pay-tab')[1].classList.add('active');
         document.getElementById('bank_section').classList.add('active');
