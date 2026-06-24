@@ -39,29 +39,27 @@ unset($_SESSION['admin_flash']);
 include 'includes/header.php';
 ?>
 
-<?php echo admin_theme_styles(); ?>
+<?php echo admin_theme_styles('gigs'); ?>
 
 <div class="admin-shell">
-    <div class="admin-hero">
-        <div>
-            <div class="pill pill-info" style="margin-bottom:0.8rem;">Gigs</div>
-            <h1>Registered Gigs</h1>
-            <p>Review all gigs, approve pending work, and suspend or restore gigs when needed.</p>
-        </div>
+    <div class="admin-page-header">
+        <h1 class="admin-page-title">Registered Gigs</h1>
     </div>
+
+    <?php echo admin_render_nav('gigs'); ?>
 
     <?php if (!empty($flash)): ?>
         <div class="admin-panel" style="padding:1rem 1.2rem; margin-bottom:1rem; background: <?php echo $flash['type'] === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(248,113,113,0.12)'; ?>; border-color: <?php echo $flash['type'] === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(248,113,113,0.3)'; ?>;">
-            <strong style="color:#fff;"><?php echo htmlspecialchars($flash['type'] === 'success' ? 'Success' : 'Attention'); ?></strong>
-            <div style="color:#e2e8f0; margin-top:0.3rem;"><?php echo htmlspecialchars($flash['message']); ?></div>
+            <strong style="color:#0f172a;"><?php echo htmlspecialchars($flash['type'] === 'success' ? 'Success' : 'Attention'); ?></strong>
+            <div style="color:#475569; margin-top:0.3rem;"><?php echo htmlspecialchars($flash['message']); ?></div>
         </div>
     <?php endif; ?>
 
     <div class="metric-grid">
         <div class="admin-panel metric-card"><div class="metric-label">Total Gigs</div><div class="metric-value"><?php echo $stats['total']; ?></div><div class="metric-note">All posted gigs</div></div>
-        <div class="admin-panel metric-card"><div class="metric-label">Approved</div><div class="metric-value"><?php echo $stats['approved']; ?></div><div class="metric-note">Visible on the platform</div></div>
-        <div class="admin-panel metric-card"><div class="metric-label">Pending</div><div class="metric-value"><?php echo $stats['pending']; ?></div><div class="metric-note">Waiting for review</div></div>
-        <div class="admin-panel metric-card"><div class="metric-label">Suspended</div><div class="metric-value"><?php echo $stats['suspended']; ?></div><div class="metric-note">Hidden from clients</div></div>
+        <div class="admin-panel metric-card"><div class="metric-label">Approved</div><div class="metric-value" style="color: #10b981;"><?php echo $stats['approved']; ?></div><div class="metric-note">Visible on the platform</div></div>
+        <div class="admin-panel metric-card"><div class="metric-label">Pending</div><div class="metric-value" style="color: #f97316;"><?php echo $stats['pending']; ?></div><div class="metric-note">Waiting for review</div></div>
+        <div class="admin-panel metric-card"><div class="metric-label">Suspended</div><div class="metric-value" style="color: #ef4444;"><?php echo $stats['suspended']; ?></div><div class="metric-note">Hidden from clients</div></div>
     </div>
 
     <div class="section-card admin-panel">
@@ -78,7 +76,7 @@ include 'includes/header.php';
                 <tbody>
                     <?php foreach ($all_gigs as $gig): ?>
                         <tr>
-                            <td style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($gig['title']); ?></td>
+                            <td style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($gig['title']); ?></td>
                             <td><?php echo htmlspecialchars($gig['student_name']); ?></td>
                             <td><span class="pill pill-info"><?php echo htmlspecialchars($gig['category']); ?></span></td>
                             <td><span class="pill <?php echo admin_status_class('gig', $gig['status']); ?>"><?php echo htmlspecialchars(admin_status_label('gig', $gig['status'])); ?></span></td>

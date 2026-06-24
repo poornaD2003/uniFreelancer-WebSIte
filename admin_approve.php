@@ -61,21 +61,19 @@ unset($_SESSION['admin_flash']);
 include 'includes/header.php';
 ?>
 
-<?php echo admin_theme_styles(); ?>
+<?php echo admin_theme_styles('approvals'); ?>
 
 <div class="admin-shell">
-    <div class="admin-hero">
-        <div>
-            <div class="pill pill-info" style="margin-bottom:0.8rem;">Moderation Queue</div>
-            <h1>Pending Approvals</h1>
-            <p>Approve or suspend pending users, clubs, and gigs from one place.</p>
-        </div>
+    <div class="admin-page-header">
+        <h1 class="admin-page-title">Pending Approvals</h1>
     </div>
+
+    <?php echo admin_render_nav('approvals'); ?>
 
     <?php if (!empty($flash)): ?>
         <div class="admin-panel" style="padding:1rem 1.2rem; margin-bottom:1rem; background: <?php echo $flash['type'] === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(248,113,113,0.12)'; ?>; border-color: <?php echo $flash['type'] === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(248,113,113,0.3)'; ?>;">
-            <strong style="color:#fff;"><?php echo htmlspecialchars($flash['type'] === 'success' ? 'Success' : 'Attention'); ?></strong>
-            <div style="color:#e2e8f0; margin-top:0.3rem;"><?php echo htmlspecialchars($flash['message']); ?></div>
+            <strong style="color:#0f172a;"><?php echo htmlspecialchars($flash['type'] === 'success' ? 'Success' : 'Attention'); ?></strong>
+            <div style="color:#475569; margin-top:0.3rem;"><?php echo htmlspecialchars($flash['message']); ?></div>
         </div>
     <?php endif; ?>
 
@@ -99,7 +97,7 @@ include 'includes/header.php';
                 <tbody>
                     <?php foreach ($pending_users as $user): ?>
                         <tr>
-                            <td><div style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($user['fullname']); ?></div><div style="color:#94a3b8; font-size:0.84rem;"><?php echo htmlspecialchars($user['email']); ?></div></td>
+                            <td><div style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($user['fullname']); ?></div><div style="color:#64748b; font-size:0.84rem;"><?php echo htmlspecialchars($user['email']); ?></div></td>
                             <td><span class="pill <?php echo $user['role'] === 'student' ? 'pill-success' : 'pill-info'; ?>"><?php echo htmlspecialchars($user['role']); ?></span></td>
                             <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
                             <td><div class="action-stack"><?php echo admin_action_button('user', (int)$user['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('user', (int)$user['id'], 'suspend', 'Suspend', 'danger'); ?><?php echo admin_action_button('user', (int)$user['id'], 'reject', 'Reject', 'danger'); ?></div></td>
@@ -125,7 +123,7 @@ include 'includes/header.php';
                 <tbody>
                     <?php foreach ($pending_clubs as $club): ?>
                         <tr>
-                            <td><div style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($club['club_name']); ?></div><div style="color:#94a3b8; font-size:0.84rem;">Submitted <?php echo date('M d, Y', strtotime($club['created_at'])); ?></div></td>
+                            <td><div style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($club['club_name']); ?></div><div style="color:#64748b; font-size:0.84rem;">Submitted <?php echo date('M d, Y', strtotime($club['created_at'])); ?></div></td>
                             <td><span class="pill"><?php echo htmlspecialchars($club['club_code']); ?></span></td>
                             <td><?php echo number_format((float)$club['contribution_rate'], 2); ?>%</td>
                             <td><div class="action-stack"><?php echo admin_action_button('club', (int)$club['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('club', (int)$club['id'], 'suspend', 'Suspend', 'danger'); ?><?php echo admin_action_button('club', (int)$club['id'], 'reject', 'Reject', 'danger'); ?></div></td>
@@ -151,7 +149,7 @@ include 'includes/header.php';
                 <tbody>
                     <?php foreach ($pending_gigs as $gig): ?>
                         <tr>
-                            <td style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($gig['title']); ?></td>
+                            <td style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($gig['title']); ?></td>
                             <td><?php echo htmlspecialchars($gig['student_name']); ?></td>
                             <td>Rs. <?php echo number_format((float)$gig['price'], 0); ?></td>
                             <td><span class="pill pill-info"><?php echo htmlspecialchars($gig['category']); ?></span></td>

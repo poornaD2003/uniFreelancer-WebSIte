@@ -25,11 +25,7 @@ include 'db.php';
         <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
             <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
-                <li><a href="admin_dashboard.php">Home</a></li>
-                <li><a href="admin_approve.php">Approvals</a></li>
-                <li><a href="admin_users.php">Users</a></li>
-                <li><a href="admin_clubs.php">Clubs</a></li>
-                <li><a href="admin_gigs.php">Gigs</a></li>
+                <!-- No navbar links for admin -->
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="student_freelancer_site.php">Home</a></li>
                 <li><a href="jobs.php">Browse Jobs</a></li>
@@ -51,7 +47,7 @@ include 'db.php';
                 } elseif ($_SESSION['role'] === 'client') {
                     $profile_page = 'clientProfile.php';
                 } else {
-                    $profile_page = 'admin_dashboard.php';
+                    $profile_page = 'adminProfile.php';
                 }
                 
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {

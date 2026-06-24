@@ -32,16 +32,14 @@ if ($recent_activity_result) {
 }
 ?>
 
-<?php echo admin_theme_styles(); ?>
+<?php echo admin_theme_styles('dashboard'); ?>
 
 <div class="admin-shell">
-    <div class="admin-hero">
-        <div>
-            <div class="pill pill-info" style="margin-bottom:0.8rem;">Admin Workspace</div>
-            <h1>Dashboard Overview</h1>
-            <p>Use the separate admin pages to approve pending users and gigs, suspend accounts, and review every registered user and club.</p>
-        </div>
+    <div class="admin-page-header">
+        <h1 class="admin-page-title">Dashboard Overview</h1>
     </div>
+
+    <?php echo admin_render_nav('dashboard'); ?>
 
     <div class="metric-grid">
         <div class="admin-panel metric-card">
@@ -51,7 +49,7 @@ if ($recent_activity_result) {
         </div>
         <div class="admin-panel metric-card">
             <div class="metric-label">Pending Work</div>
-            <div class="metric-value"><?php echo $stats['pending_users'] + $stats['pending_clubs'] + $stats['pending_gigs']; ?></div>
+            <div class="metric-value" style="color: #f97316;"><?php echo $stats['pending_users'] + $stats['pending_clubs'] + $stats['pending_gigs']; ?></div>
             <div class="metric-note">Registrations and gigs waiting for review</div>
         </div>
         <div class="admin-panel metric-card">
@@ -72,8 +70,23 @@ if ($recent_activity_result) {
                 <h2>Quick Actions</h2>
                 <a href="admin_approve.php">Open approvals</a>
             </div>
-            <div class="muted-empty" style="padding-top:0.25rem;">
-                Use the header links for Users, Clubs, and Gigs to manage the rest of the admin workspace.
+            <div class="quick-links">
+                <a href="admin_approve.php" class="quick-link">
+                    <span><i class="fas fa-check-circle" style="margin-right: 8px;"></i> Review Pending Registrations & Gigs</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="admin_users.php" class="quick-link">
+                    <span><i class="fas fa-users" style="margin-right: 8px;"></i> Manage User Accounts</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="admin_clubs.php" class="quick-link">
+                    <span><i class="fas fa-shield-halved" style="margin-right: 8px;"></i> Review Registered Clubs</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="admin_gigs.php" class="quick-link">
+                    <span><i class="fas fa-briefcase" style="margin-right: 8px;"></i> Moderate Active Gigs</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
             </div>
         </div>
 
@@ -96,7 +109,7 @@ if ($recent_activity_result) {
                     <tbody>
                         <?php foreach ($recent_activity as $item): ?>
                             <tr>
-                                <td style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($item['item_name']); ?></td>
+                                <td style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($item['item_name']); ?></td>
                                 <td><span class="pill <?php echo $item['item_type'] === 'user' ? 'pill-success' : ($item['item_type'] === 'club' ? 'pill-info' : 'pill-warning'); ?>"><?php echo htmlspecialchars($item['item_type']); ?></span></td>
                                 <td><?php echo date('M d, Y', strtotime($item['created_at'])); ?></td>
                             </tr>
