@@ -69,6 +69,9 @@ include_once __DIR__ . '/db.php';
         </ul>
         <div class="nav-actions">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> f2037cb2333b3b1dd00a691bee64ee041cba301b
             <?php if(isset($_SESSION['user_id'])):
                 if ($_SESSION['role'] === 'student') {
                     $profile_page = 'studentProfile.php';
@@ -79,16 +82,20 @@ include_once __DIR__ . '/db.php';
                 }
 
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+<<<<<<< HEAD
 =======
             <?php if(isset($_SESSION['user_id'])): 
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
                  if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
 >>>>>>> 51af2466c40eb904fe8bad67da69fad4b70d3397
+=======
+>>>>>>> f2037cb2333b3b1dd00a691bee64ee041cba301b
                     $pure_filename = basename($_SESSION['profile_pic']); 
                     $profile_pic = '/unilance/uploads/' . $pure_filename;
                 } else {
                     $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                 }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
                 $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
@@ -104,6 +111,8 @@ include_once __DIR__ . '/db.php';
                              alt="Profile Picture"
                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #10b981);"
 =======
+=======
+>>>>>>> f2037cb2333b3b1dd00a691bee64ee041cba301b
                 $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
                 $icon_class = ($_SESSION['role'] === 'admin') ? 'fa-user-shield' : 'fa-user';
             ?>
@@ -112,7 +121,10 @@ include_once __DIR__ . '/db.php';
                         <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
                              alt="Profile Picture" 
                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #7c3aed);"
+<<<<<<< HEAD
 >>>>>>> 51af2466c40eb904fe8bad67da69fad4b70d3397
+=======
+>>>>>>> f2037cb2333b3b1dd00a691bee64ee041cba301b
                              onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
