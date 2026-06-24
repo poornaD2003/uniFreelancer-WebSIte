@@ -64,7 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register_student_detai
     $role             = 'student';
 
     $club_valid = true;
-    if ($club_id !== null) {
+    if ($club_id === null) {
+        $error = "Selected club is required.";
+        $club_valid = false;
+    } else {
         $club_check = $conn->prepare("SELECT club_name, club_code FROM clubs WHERE id = ? AND status = 'approved' LIMIT 1");
         if ($club_check) {
             $club_check->bind_param("i", $club_id);
@@ -365,11 +368,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_verification'])
                 <option value="">Select Department</option>
             </select>
         </div>
-        <div class="section-divider"> Club Affiliation <span class="label-optional">Optional</span></div>
+        <div class="section-divider"> Club Affiliation <span style="color: #ef4444; font-size: 0.75rem; font-weight: 600; margin-left: 6px;">* Required</span></div>
         <div class="input-group">
             <label for="club_id">Select Club / Society</label>
-            <select name="club_id" id="club_id">
-                <option value="">No Club (Independent Freelancer)</option>
+            <select name="club_id" id="club_id" required>
+                <option value="" disabled selected>-- Select Club / Society --</option>
                 <?php
                 $clubs_res = mysqli_query($conn, "SELECT id, club_name FROM clubs WHERE status = 'approved' ORDER BY club_name ASC");
                 if ($clubs_res) {
@@ -380,7 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_verification'])
                 ?>
             </select>
         </div>
-        <div class="input-group" id="club_code_group">
+        <div class="input-group" id="club_code_group" style="display: none;">
             <label for="club_code">Secret Club Access Code</label>
             <input type="text" name="club_code" id="club_code" placeholder="Enter Club's Access Code">
             <small style="color: #718096; display: block; margin-top: 0.25rem;">To join this club, you must enter the secret access code provided by the club committee.</small>
@@ -545,6 +548,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const clubCodeInput = document.getElementById("club_code");
     
     if (clubSelect && clubCodeGroup) {
+        // Run on initial load/restore if a club was already selected
+        if (clubSelect.value !== "") {
+            clubCodeGroup.style.display = "block";
+            clubCodeInput.required = true;
+        } else {
+            clubCodeGroup.style.display = "none";
+            clubCodeInput.required = false;
+        }
+
         clubSelect.addEventListener("change", function () {
             if (this.value !== "") {
                 clubCodeGroup.style.display = "block";
