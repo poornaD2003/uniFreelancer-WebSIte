@@ -58,8 +58,8 @@ $open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
     </nav></aside>
     <main class="main">
         <h1>Manage Client Orders</h1>
-        <?php if(!empty($msg)): ?><div style="background:rgba(16,185,129,.1);border:1px solid var(--primary);color:var(--primary);padding:1rem;border-radius:8px;"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
-        <?php if(!empty($error_msg)): ?><div style="background:rgba(239,68,68,.1);border:1px solid #ef4444;color:#ef4444;padding:1rem;border-radius:8px;"><?php echo htmlspecialchars($error_msg); ?></div><?php endif; ?>
+        <?php if(!empty($msg)): ?><div class="status-alert" style="background:rgba(16,185,129,.1);border:1px solid var(--primary);color:var(--primary);padding:1rem;border-radius:8px;margin-bottom:1rem;max-height:200px;overflow:hidden;transition:opacity 0.5s ease, padding 0.5s ease, margin-bottom 0.5s ease, max-height 0.5s ease, border-color 0.5s ease;"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
+        <?php if(!empty($error_msg)): ?><div class="status-alert" style="background:rgba(239,68,68,.1);border:1px solid #ef4444;color:#ef4444;padding:1rem;border-radius:8px;margin-bottom:1rem;max-height:200px;overflow:hidden;transition:opacity 0.5s ease, padding 0.5s ease, margin-bottom 0.5s ease, max-height 0.5s ease, border-color 0.5s ease;"><?php echo htmlspecialchars($error_msg); ?></div><?php endif; ?>
         
         <div class="container">
             <div class="section-header"><i class="fas fa-list"></i> Order Activity Queue</div>
@@ -627,6 +627,7 @@ $open_order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
     }, 2000);
 
     document.addEventListener("DOMContentLoaded", function() {
+
         var openOrderId = <?php echo json_encode($open_order_id); ?>;
         if (openOrderId > 0) {
             toggleChat(openOrderId);

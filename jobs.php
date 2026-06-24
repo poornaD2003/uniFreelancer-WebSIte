@@ -9,15 +9,35 @@ $sort_option     = isset($_GET['sort'])     ? $_GET['sort']     : 'recent';
 $min_price       = isset($_GET['min_price']) && is_numeric($_GET['min_price']) ? (float)$_GET['min_price'] : '';
 $max_price       = isset($_GET['max_price']) && is_numeric($_GET['max_price']) ? (float)$_GET['max_price'] : '';
 
+// NEW: Grab selected categories from the sidebar checkboxes
+$selected_categories = isset($_GET['cat_cb']) ? (array)$_GET['cat_cb'] : [];
+
+// If a top-bar navigation category is clicked, sync it with the checkboxes array
+if (!empty($category_filter) && empty($selected_categories)) {
+    $selected_categories[] = $category_filter;
+}
+
 // 2. Build dynamic SQL
 $sql_conditions = "j.status = 'approve'";
 
 if (!empty($search_query)) {
     $sql_conditions .= " AND (j.title LIKE '%$search_query%' OR j.description LIKE '%$search_query%')";
 }
-if (!empty($category_filter)) {
-    $sql_conditions .= " AND j.category = '$category_filter'";
+
+// FIXED: Handle multiple checkbox selections or single link categories seamlessly
+if (!empty($selected_categories)) {
+    $escaped_cats = array_map(function($cat) use ($conn) {
+        return "'" . $conn->real_escape_string($cat) . "'";
+    }, $selected_categories);
+    
+    $sql_conditions .= " AND j.category IN (" . implode(',', $escaped_cats) . ")";
+    
+    // Set active header title preview based on first chosen category if single category isn't set
+    if (empty($category_filter)) {
+        $category_filter = $selected_categories[0];
+    }
 }
+
 if ($min_price !== '') {
     $sql_conditions .= " AND j.price >= $min_price";
 }
@@ -191,8 +211,8 @@ $categories = [
                     <div class="filter-row">
                         <label>
                             <input type="checkbox" name="cat_cb[]" value="<?php echo $val; ?>"
-                                   <?php echo ($category_filter === $val) ? 'checked' : ''; ?>
-                                   onchange="document.getElementById('filter-form').submit()">
+                            <?php echo in_array($val, $selected_categories) ? 'checked' : ''; ?>
+                            onchange="document.getElementById('filter-form').submit()">
                             <?php echo $opt['label']; ?>
                         </label>
                     </div>
@@ -227,9 +247,13 @@ $categories = [
         <div class="gig-grid">
             <?php if ($result && $jobCount > 0): ?>
                 <?php while ($job = $result->fetch_assoc()):
-                    $img_path = (!empty($job['image']) && $job['image'] !== 'default.png')
-                        ? "uploads/" . htmlspecialchars($job['image'])
-                        : "images/hero_illustration.png";
+                    // Take only the first image from the comma-separated list
+                    $raw_images = (!empty($job['image']) && $job['image'] !== 'default.png')
+                        ? array_values(array_filter(array_map('trim', explode(',', $job['image']))))
+                        : [];
+                    $img_path = !empty($raw_images)
+                        ? 'uploads/' . htmlspecialchars($raw_images[0])
+                        : 'images/hero_illustration.png';
                 ?>
                 <div class="gig-card">
                     <!-- Cover image -->
