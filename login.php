@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 $_SESSION['profile_pic'] = $user['profile_pic'];
                 
                 if ($user['role'] === 'admin') {
-                    header("Location: admin_approve.php");
+                    header("Location: admin_dashboard.php");
                     exit();
                 }
                 
