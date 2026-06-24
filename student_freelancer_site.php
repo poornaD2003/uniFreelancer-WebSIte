@@ -249,7 +249,6 @@ if ($top_gigs_result && $top_gigs_result->num_rows > 0):
           $jobs_count = $f['jobs_completed'] ? $f['jobs_completed'] : 0;
           $initial = mb_substr($f['fullname'], 0, 1);
 
-          // 🛠️ FREELANCER PROFILE PIC FIX: පාර පිරිසිදු කර නිවැරදි path එක සාදා ගැනීම
           if (!empty($f['profile_pic']) && $f['profile_pic'] !== 'default.png') {
               $pure_avatar_name = basename($f['profile_pic']);
               $final_avatar_path = "/unilance/uploads/" . $pure_avatar_name;
@@ -284,7 +283,6 @@ if ($top_gigs_result && $top_gigs_result->num_rows > 0):
             <div class="fl-rate"><?= $rate_display ?></div>
             <div class="fl-jobs"><?= $jobs_count ?> jobs completed</div>
           </div>
-          <a href="profile.php?id=<?= $f['id'] ?>" class="btn-line" style="text-decoration: none; text-align: center;">View Profile</a>
         </div>
       </div>
       <?php 
