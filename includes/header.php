@@ -17,19 +17,6 @@ include_once __DIR__ . '/db.php';
             display: flex;
             align-items: center;
             gap: 15px;
-
-        }
-        .user-greeting {
-            font-size: 0.92rem;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: var(--green-dim);
-            border-radius: 50px;
-            border: 1px solid var(--border);
-            font-weight: 500;
         }
         .user-greeting {
             font-size: 0.92rem;
@@ -50,8 +37,7 @@ include_once __DIR__ . '/db.php';
         <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
             <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
-                <!-- No navbar links for admin -->
-            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+                <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="student_freelancer_site.php">Home</a></li>
                 <li><a href="jobs.php">Browse Jobs</a></li>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
@@ -68,7 +54,25 @@ include_once __DIR__ . '/db.php';
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
-            <?php if(isset($_SESSION['user_id'])):
+            <?php 
+            // ─── 1. USER LOGIN වී ඇත්නම් (Student, Client, Admin) ───
+            if(isset($_SESSION['user_id'])):
+                $user_id = $_SESSION['user_id'];
+                
+                $db_pic = '';
+                if(isset($conn)) {
+                    $pic_stmt = $conn->prepare("SELECT profile_pic FROM users WHERE id = ? LIMIT 1");
+                    if($pic_stmt) {
+                        $pic_stmt->bind_param("i", $user_id);
+                        $pic_stmt->execute();
+                        $pic_result = $pic_stmt->get_result();
+                        if($pic_row = $pic_result->fetch_assoc()) {
+                            $db_pic = $pic_row['profile_pic'];
+                        }
+                        $pic_stmt->close();
+                    }
+                }
+
                 if ($_SESSION['role'] === 'student') {
                     $profile_page = 'studentProfile.php';
                 } elseif ($_SESSION['role'] === 'client') {
@@ -79,14 +83,14 @@ include_once __DIR__ . '/db.php';
 
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
-                    $profile_pic = '/unilance/uploads/' . $pure_filename;
+                    $profile_pic = 'uploads/' . $pure_filename;
                 } else {
                     $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                 }
+                
                 $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
-                $icon_class = ($_SESSION['role'] === 'admin') ? 'fa-user-shield' : 'fa-user';
-            ?>
-             <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
+            ?>  
+                <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
                     <a href="<?php echo $profile_page; ?>">
                         <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
                              alt="Profile Picture" 
@@ -96,7 +100,10 @@ include_once __DIR__ . '/db.php';
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
                
-            <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
+            <?php 
+            // ─── 2. CLUB LOGIN වී ඇත්නම් ───
+            elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): 
+            ?>
                 <div class="nav-profile">
                     <span class="user-greeting">
                         <i class="fas fa-users" style="color: var(--green);"></i>
@@ -105,7 +112,10 @@ include_once __DIR__ . '/db.php';
                     <a href="club_dashboard.php" class="btn btn-outline">Dashboard</a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
-            <?php else: ?>
+            <?php 
+            // ─── 3. LOGIN වී නොමැති නම් (Guest) ───
+            else: 
+            ?>
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
         </div>
