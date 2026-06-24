@@ -3,6 +3,42 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 include_once __DIR__ . '/db.php'; 
+
+if (isset($_SESSION['user_id'])) {
+    $uid = (int)$_SESSION['user_id'];
+    $stmtCheck = $conn->prepare("SELECT status FROM users WHERE id = ?");
+    if ($stmtCheck) {
+        $stmtCheck->bind_param("i", $uid);
+        $stmtCheck->execute();
+        $resCheck = $stmtCheck->get_result();
+        if ($rowCheck = $resCheck->fetch_assoc()) {
+            if ($rowCheck['status'] === 'suspend' || $rowCheck['status'] === 'inactive') {
+                session_unset();
+                session_destroy();
+                header("Location: login.php");
+                exit();
+            }
+        }
+        $stmtCheck->close();
+    }
+} elseif (isset($_SESSION['club_id'])) {
+    $cid = (int)$_SESSION['club_id'];
+    $stmtCheck = $conn->prepare("SELECT status FROM clubs WHERE id = ?");
+    if ($stmtCheck) {
+        $stmtCheck->bind_param("i", $cid);
+        $stmtCheck->execute();
+        $resCheck = $stmtCheck->get_result();
+        if ($rowCheck = $resCheck->fetch_assoc()) {
+            if ($rowCheck['status'] === 'suspended' || $rowCheck['status'] === 'inactive') {
+                session_unset();
+                session_destroy();
+                header("Location: login_club.php");
+                exit();
+            }
+        }
+        $stmtCheck->close();
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

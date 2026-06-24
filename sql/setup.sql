@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('student', 'client', 'admin') NOT NULL,
-    status ENUM('active', 'inactive', 'pending') DEFAULT 'pending',
+    status ENUM('active', 'suspended', 'pending') DEFAULT 'pending',
     profile_pic VARCHAR(255) DEFAULT 'default.png',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -93,7 +93,7 @@ include 'includes/header.php';
         <?php else: ?>
             <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>Club</th><th>Username</th><th>Code</th><th>Status</th><th>Share</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>
+                <thead><tr><th>Club</th><th>Code</th><th>Status</th><th>Share</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>
                 <tbody>
                     <?php foreach ($all_clubs as $club): ?>
                         <tr>
