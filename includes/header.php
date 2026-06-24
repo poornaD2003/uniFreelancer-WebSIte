@@ -17,6 +17,19 @@ include 'db.php';
             display: flex;
             align-items: center;
             gap: 15px;
+
+        }
+        .user-greeting {
+            font-size: 0.92rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--green-dim);
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            font-weight: 500;
         }
     </style>
 </head>
@@ -26,7 +39,10 @@ include 'db.php';
         <ul class="nav-links">
             <li><a href="student_freelancer_site.php">Home</a></li>
             <li><a href="jobs.php">Browse Jobs</a></li>
-            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
+                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+                <li><a href="admin_approve.php">Approvals</a></li>
+            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
                  <li><a href="student-post-job.php">Post a Gig</a></li>
@@ -36,20 +52,33 @@ include 'db.php';
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
                 $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
-                
-                if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
                     $profile_pic = '/unilance/uploads/' . $pure_filename;
                 } else {
                     $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                 }
+                $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
+                $icon_class = ($_SESSION['role'] === 'admin') ? 'fa-user-shield' : 'fa-user';
             ?>
-                <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
+             <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
                     <a href="<?php echo $profile_page; ?>">
                         <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
                              alt="Profile Picture" 
                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #7c3aed);"
                              onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
+                    </a>
+                    <a href="logout.php" class="btn btn-outline">Logout</a>
+                </div>
+               
+            <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
+                <div class="nav-profile">
+                    <span class="user-greeting">
+                        <i class="fas fa-users" style="color: var(--green); margin-right: 5px;"></i>
+                        <strong><?php echo htmlspecialchars($_SESSION['club_name'] ?? 'Club'); ?></strong>
+                    </span>
+                    <a href="club_dashboard.php" class="btn btn-outline">
+                       Dashboard
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
