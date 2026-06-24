@@ -36,7 +36,7 @@ include 'db.php';
         </ul>
         <div class="nav-actions">
             <?php if(isset($_SESSION['user_id'])): 
-                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
+                $profile_page = ($_SESSION['role'] === 'student') ? 'profile.php?id=' . $_SESSION['user_id'] : 'clientProfile.php';
                 
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
