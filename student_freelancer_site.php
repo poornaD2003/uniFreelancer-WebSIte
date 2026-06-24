@@ -64,11 +64,11 @@ $steps = [
 
 <section class="hero" style="max-width:1280px;margin:0 auto;padding:110px 7% 60px;display:flex;align-items:center;gap:4rem;">
   <div class="hero-left">
-    <div class="hero-badge"><span class="pulse"></span> 500+ students actively freelancing</div>
+    <div class="hero-badge">500+ students actively freelancing</div>
     <h1>Find <em>Student Talent</em><br>for Any Project</h1>
     <p class="hero-sub">The exclusive freelance marketplace for university students. Hire skilled developers, designers, and writers — fast, affordable, and verified.</p>
     <div class="hero-btns">
-      <a href="jobs.php" class="btn btn-primary">Browse Gigs ↗</a>
+      <a href="jobs.php" class="btn btn-primary">Browse Gigs </a>
       <a href="register.php" class="btn btn-ghost">Start Freelancing</a>
     </div>
     <div class="hero-trust">
@@ -76,29 +76,7 @@ $steps = [
     </div>
   </div>
   <div class="hero-right">
-    <div class="hero-main-card">
-      <div class="card-profile-row">
-        <div class="card-avatar">👩‍💻</div>
-        <div>
-          <div class="card-name">Aisha Rahman</div>
-          <div class="card-uni">🎓 MIT · Computer Science</div>
-          <div class="card-stars">★★★★★ 4.9 (34 reviews)</div>
-        </div>
-      </div>
-      <div class="card-skill-tags">
-        <span class="skill-tag">React</span>
-        <span class="skill-tag">Node.js</span>
-        <span class="skill-tag">Firebase</span>
-        <span class="skill-tag">UI/UX</span>
-      </div>
-      <div class="card-rate-row">
-        <div class="card-rate">$28 <span>/ hour</span></div>
-        <button class="btn btn-primary btn-sm">Hire Now</button>
-      </div>
-    </div>
-    <div class="float-card fc1">✅ Job Completed</div>
-    <div class="float-card fc2">💬 3 new messages</div>
-    <div class="float-card fc3">🔒 Secure Payments</div>
+    <img src="images/imag2.png" alt="Student Freelancer" class="hero-image">
   </div>
 </section>
 
@@ -126,7 +104,7 @@ $steps = [
   </div>
 </div>
 
-<section class="section how-section" id="how">
+<section class="section how-section" >
   <div class="section-inner">
     <div class="section-head reveal">
       <span class="sec-tag">Top Gigs</span>
@@ -354,15 +332,8 @@ $steps = [
   </div>
 </section>
 
-<footer>
-  <div class="footer-logo">UniGigs<span>.</span></div>
-  <p>The student freelance marketplace</p>
-  <div class="footer-links">
-    <a href="#">About</a><a href="#">Jobs</a><a href="#">Pricing</a>
-    <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a>
-  </div>
-  <p class="footer-copy">© <?= date('Y') ?> UniGigs. Built for students, by students. ❤️</p>
-</footer>
+<?php include 'includes/footer.php'; ?>
+
 
 <script>
 // ── Navbar scroll
