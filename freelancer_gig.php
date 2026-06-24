@@ -177,12 +177,60 @@ function render_stars(float $rating, string $size_class = ''): string {
             </div>
 
             <?php
-            $img_path = (!empty($gig['image']) && $gig['image'] !== 'default.png')
-                ? "uploads/" . htmlspecialchars($gig['image'])
-                : "images/hero_illustration.png";
+            // Parse multiple images
+            $raw_imgs = (!empty($gig['image']) && $gig['image'] !== 'default.png')
+                ? array_values(array_filter(array_map('trim', explode(',', $gig['image']))))
+                : [];
+            $gig_images = !empty($raw_imgs)
+                ? $raw_imgs
+                : ['images/hero_illustration.png'];
+            $is_default_img = empty($raw_imgs);
             ?>
             <div class="gig-img-wrap">
-                <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($gig['title']); ?>" class="gig-img">
+                <!-- Main viewer -->
+                <div class="gig-gallery">
+                    <?php foreach ($gig_images as $idx => $gimg): ?>
+                        <div class="gig-slide<?php echo $idx === 0 ? ' active' : ''; ?>" data-idx="<?php echo $idx; ?>">
+                            <img src="<?php echo $is_default_img ? $gimg : 'uploads/' . htmlspecialchars($gimg); ?>"
+                                 alt="<?php echo htmlspecialchars($gig['title']); ?> – image <?php echo $idx + 1; ?>"
+                                 class="gig-img">
+                        </div>
+                    <?php endforeach; ?>
+
+                    <?php if (count($gig_images) > 1): ?>
+                        <!-- Arrow buttons -->
+                        <button class="gig-arrow gig-arrow-prev" id="gigPrev" aria-label="Previous image">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="gig-arrow gig-arrow-next" id="gigNext" aria-label="Next image">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+
+                        <!-- Dot indicators -->
+                        <div class="gig-dots">
+                            <?php foreach ($gig_images as $idx => $gimg): ?>
+                                <span class="gig-dot<?php echo $idx === 0 ? ' active' : ''; ?>" data-goto="<?php echo $idx; ?>"></span>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <!-- Image counter badge -->
+                        <div class="gig-counter">
+                            <span id="gigCur">1</span> / <?php echo count($gig_images); ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (count($gig_images) > 1): ?>
+                <!-- Thumbnail strip -->
+                <div class="gig-thumbs">
+                    <?php foreach ($gig_images as $idx => $gimg): ?>
+                        <div class="gig-thumb<?php echo $idx === 0 ? ' active' : ''; ?>" data-goto="<?php echo $idx; ?>">
+                            <img src="<?php echo $is_default_img ? $gimg : 'uploads/' . htmlspecialchars($gimg); ?>"
+                                 alt="Thumbnail <?php echo $idx + 1; ?>">
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
             </div>
 
             <div class="cat-pill"><i class="fas fa-layer-group"></i> <?php echo htmlspecialchars($gig['category']); ?></div>
@@ -389,9 +437,13 @@ function render_stars(float $rating, string $size_class = ''): string {
     <div class="gigs-grid">
         <?php if ($other_gigs_result && $other_gigs_result->num_rows > 0): ?>
             <?php while ($ogig = $other_gigs_result->fetch_assoc()):
-                $ogig_img = (!empty($ogig['image']) && $ogig['image'] !== 'default.png')
-                    ? "uploads/" . htmlspecialchars($ogig['image'])
-                    : "images/hero_illustration.png";
+                // Take only the first image from the comma-separated list
+                $ogig_imgs = (!empty($ogig['image']) && $ogig['image'] !== 'default.png')
+                    ? array_values(array_filter(array_map('trim', explode(',', $ogig['image']))))
+                    : [];
+                $ogig_img = !empty($ogig_imgs)
+                    ? 'uploads/' . htmlspecialchars($ogig_imgs[0])
+                    : 'images/hero_illustration.png';
             ?>
             <a href="freelancer_gig.php?id=<?php echo $ogig['id']; ?>" class="gig-card">
                 <img src="<?php echo $ogig_img; ?>" alt="<?php echo htmlspecialchars($ogig['title']); ?>" class="gig-card-img">
@@ -417,6 +469,78 @@ if (ta && cc) {
     cc.textContent = ta.value.length;
     ta.addEventListener('input', () => cc.textContent = ta.value.length);
 }
+
+// ── Gig image gallery ─────────────────────────────────────────
+(function () {
+    const slides = Array.from(document.querySelectorAll('.gig-slide'));
+    const dots   = Array.from(document.querySelectorAll('.gig-dot'));
+    const thumbs = Array.from(document.querySelectorAll('.gig-thumb'));
+    const curEl  = document.getElementById('gigCur');
+    const prevBtn = document.getElementById('gigPrev');
+    const nextBtn = document.getElementById('gigNext');
+
+    if (slides.length < 2) return; // single image, nothing to do
+
+    let current  = 0;
+    let autoPlay = null;
+
+    function goTo(idx) {
+        slides[current].classList.remove('active');
+        dots[current]   && dots[current].classList.remove('active');
+        thumbs[current] && thumbs[current].classList.remove('active');
+
+        current = (idx + slides.length) % slides.length;
+
+        slides[current].classList.add('active');
+        dots[current]   && dots[current].classList.add('active');
+        thumbs[current] && thumbs[current].classList.add('active');
+        if (curEl) curEl.textContent = current + 1;
+    }
+
+    function startAuto() {
+        stopAuto();
+        autoPlay = setInterval(() => goTo(current + 1), 3500);
+    }
+
+    function stopAuto() {
+        clearInterval(autoPlay);
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { goTo(current - 1); startAuto(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { goTo(current + 1); startAuto(); });
+
+    // Dot clicks
+    dots.forEach(dot => {
+        dot.addEventListener('click', () => { goTo(parseInt(dot.dataset.goto)); startAuto(); });
+    });
+
+    // Thumbnail clicks
+    thumbs.forEach(thumb => {
+        thumb.addEventListener('click', () => { goTo(parseInt(thumb.dataset.goto)); startAuto(); });
+    });
+
+    // Pause on hover over the gallery
+    const gallery = document.querySelector('.gig-gallery');
+    if (gallery) {
+        gallery.addEventListener('mouseenter', stopAuto);
+        gallery.addEventListener('mouseleave', startAuto);
+    }
+
+    // Swipe support on touch devices
+    let touchStartX = 0;
+    if (gallery) {
+        gallery.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+        gallery.addEventListener('touchend', e => {
+            const diff = touchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 40) {
+                goTo(diff > 0 ? current + 1 : current - 1);
+                startAuto();
+            }
+        }, { passive: true });
+    }
+
+    startAuto();
+}());
 </script>
 
 <?php include 'includes/footer.php'; ?>
