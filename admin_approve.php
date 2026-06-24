@@ -1,187 +1,168 @@
 <?php
-// 1. Session start කිරීම (Admin ලොග් වී ඇත්දැයි බැලීමට අවශ්‍ය නිසා)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+include_once __DIR__ . '/includes/admin_common.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['entity'], $_POST['action'], $_POST['id'])) {
+    $entity = (string)$_POST['entity'];
+    $action = (string)$_POST['action'];
+    $id = (int)$_POST['id'];
+
+    $ok = false;
+    $message = 'Unable to complete the moderation action.';
+
+    if ($entity === 'user') {
+        if ($action === 'approve' || $action === 'restore') {
+            $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['active', $id]);
+            $message = 'User approved successfully.';
+        } elseif ($action === 'suspend') {
+            $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['inactive', $id]);
+            $message = 'User suspended successfully.';
+        } elseif ($action === 'reject') {
+            $ok = admin_post_query($conn, 'DELETE FROM users WHERE id = ?', 'i', [$id]);
+            $message = 'User registration rejected and removed.';
+        }
+    } elseif ($entity === 'club') {
+        if ($action === 'approve' || $action === 'restore') {
+            $ok = admin_post_query($conn, 'UPDATE clubs SET status = ? WHERE id = ?', 'si', ['approved', $id]);
+            $message = 'Club approved successfully.';
+        } elseif ($action === 'suspend') {
+            $ok = admin_post_query($conn, 'UPDATE clubs SET status = ? WHERE id = ?', 'si', ['suspended', $id]);
+            $message = 'Club suspended successfully.';
+        } elseif ($action === 'reject') {
+            $ok = admin_post_query($conn, 'DELETE FROM clubs WHERE id = ?', 'i', [$id]);
+            $message = 'Club registration rejected and removed.';
+        }
+    } elseif ($entity === 'gig') {
+        if ($action === 'approve' || $action === 'restore') {
+            $ok = admin_post_query($conn, 'UPDATE gigs SET status = ? WHERE id = ?', 'si', ['approve', $id]);
+            $message = 'Gig approved successfully.';
+        } elseif ($action === 'suspend') {
+            $ok = admin_post_query($conn, 'UPDATE gigs SET status = ? WHERE id = ?', 'si', ['suspended', $id]);
+            $message = 'Gig suspended successfully.';
+        }
+    }
+
+    if ($ok) {
+        admin_flash_and_redirect('success', $message, 'admin_approve.php');
+    }
+
+    admin_flash_and_redirect('error', $message, 'admin_approve.php');
 }
 
-// 2. MySQLi connection එක ($conn) සහිත db.php ඇතුළත් කිරීම
-include 'includes/db.php';
+$pending_users_result = $conn->query("SELECT id, fullname, email, role, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC");
+$pending_users = $pending_users_result ? $pending_users_result->fetch_all(MYSQLI_ASSOC) : [];
+$pending_clubs_result = $conn->query("SELECT id, club_name, club_code, contribution_rate, created_at FROM clubs WHERE status = 'pending' ORDER BY created_at DESC");
+$pending_clubs = $pending_clubs_result ? $pending_clubs_result->fetch_all(MYSQLI_ASSOC) : [];
+$pending_gigs_result = $conn->query("SELECT g.id, g.title, g.category, g.price, g.created_at, u.fullname AS student_name FROM gigs g JOIN users u ON g.student_id = u.id WHERE g.status = 'pending' ORDER BY g.created_at DESC");
+$pending_gigs = $pending_gigs_result ? $pending_gigs_result->fetch_all(MYSQLI_ASSOC) : [];
+
+$flash = $_SESSION['admin_flash'] ?? null;
+unset($_SESSION['admin_flash']);
+
 include 'includes/header.php';
-
-// 3. Admin කෙනෙක්ද කියා ආරක්ෂාව පරීක්ෂාව (Admin panel එකක් නිසා role එක admin විය යුතුයි)
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: login.php");
-    exit();
-}
-
-$msg = "";
-$error_msg = "";
-
-// 4. Secure Approval Action (MySQLi Prepared Statements)
-if (isset($_GET['approve_id'])) {
-    $approve_id = (int)$_GET['approve_id'];
-    
-    $stmt = $conn->prepare("UPDATE users SET status = 'active' WHERE id = ?");
-    $stmt->bind_param("i", $approve_id);
-    
-    if ($stmt->execute()) {
-        $msg = "User approved successfully!";
-    }
-    $stmt->close();
-}
-
-// 5. Secure Rejection/Deletion Action (MySQLi Prepared Statements)
-if (isset($_GET['reject_id'])) {
-    $reject_id = (int)$_GET['reject_id'];
-    
-    $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->bind_param("i", $reject_id);
-    
-    if ($stmt->execute()) {
-        $error_msg = "Registration request rejected and removed.";
-    }
-    $stmt->close();
-}
-
-// 6. Pending Users Fetch කිරීම (MySQLi)
-$query = "SELECT id, fullname, email, role, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC";
-$result = $conn->query($query);
-$pending_users = $result->fetch_all(MYSQLI_ASSOC);
-
-// 7. Secure Club Approval Action (MySQLi Prepared Statements)
-if (isset($_GET['approve_club_id'])) {
-    $approve_club_id = (int)$_GET['approve_club_id'];
-    
-    $stmt = $conn->prepare("UPDATE clubs SET status = 'approved' WHERE id = ?");
-    if ($stmt) {
-        $stmt->bind_param("i", $approve_club_id);
-        if ($stmt->execute()) {
-            $msg = "Club approved successfully!";
-        }
-        $stmt->close();
-    }
-}
-
-// 8. Secure Club Rejection/Deletion Action (MySQLi Prepared Statements)
-if (isset($_GET['reject_club_id'])) {
-    $reject_club_id = (int)$_GET['reject_club_id'];
-    
-    $stmt = $conn->prepare("DELETE FROM clubs WHERE id = ?");
-    if ($stmt) {
-        $stmt->bind_param("i", $reject_club_id);
-        if ($stmt->execute()) {
-            $error_msg = "Club registration request rejected and removed.";
-        }
-        $stmt->close();
-    }
-}
-
-// 9. Pending Clubs Fetch (MySQLi)
-$club_query = "SELECT id, club_name, club_code, description, contribution_rate, created_at FROM clubs WHERE status = 'pending' ORDER BY created_at DESC";
-$club_result = $conn->query($club_query);
-$pending_clubs = $club_result ? $club_result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
-<div style="padding: 120px 5% 4rem; font-family: sans-serif; background: #1a202c; color: white; min-height: 80vh;">
-    <h2 style="margin-bottom: 0.5rem; font-size: 2rem; color: #fff;">Admin Control Hub</h2>
-    <p style="color: #a0aec0; margin-bottom: 2rem;">Review pending user registration approval requests.</p>
+<?php echo admin_theme_styles(); ?>
 
-    <?php if(!empty($msg)): ?>
-        <div class='success-badge' style='display:block; margin: 1rem 0; background: rgba(46, 204, 113, 0.2); color: #2ecc71; padding: 0.75rem 1rem; border-radius: 6px; font-weight: bold;'>
-            <?php echo htmlspecialchars($msg); ?>
+<div class="admin-shell">
+    <div class="admin-hero">
+        <div>
+            <div class="pill pill-info" style="margin-bottom:0.8rem;">Moderation Queue</div>
+            <h1>Pending Approvals</h1>
+            <p>Approve or suspend pending users, clubs, and gigs from one place.</p>
+        </div>
+    </div>
+
+    <?php if (!empty($flash)): ?>
+        <div class="admin-panel" style="padding:1rem 1.2rem; margin-bottom:1rem; background: <?php echo $flash['type'] === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(248,113,113,0.12)'; ?>; border-color: <?php echo $flash['type'] === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(248,113,113,0.3)'; ?>;">
+            <strong style="color:#fff;"><?php echo htmlspecialchars($flash['type'] === 'success' ? 'Success' : 'Attention'); ?></strong>
+            <div style="color:#e2e8f0; margin-top:0.3rem;"><?php echo htmlspecialchars($flash['message']); ?></div>
         </div>
     <?php endif; ?>
 
-    <?php if(!empty($error_msg)): ?>
-        <div class='error-message' style='display:block; margin: 1rem 0; background: rgba(239,68,68,0.1); color: #f87171; padding:0.75rem 1rem; border-radius:6px; font-weight: bold;'>
-            <?php echo htmlspecialchars($error_msg); ?>
-        </div>
-    <?php endif; ?>
+    <div class="metric-grid">
+        <div class="admin-panel metric-card"><div class="metric-label">Pending Users</div><div class="metric-value"><?php echo count($pending_users); ?></div><div class="metric-note">Users waiting for approval</div></div>
+        <div class="admin-panel metric-card"><div class="metric-label">Pending Clubs</div><div class="metric-value"><?php echo count($pending_clubs); ?></div><div class="metric-note">Club registrations waiting for approval</div></div>
+        <div class="admin-panel metric-card"><div class="metric-label">Pending Gigs</div><div class="metric-value"><?php echo count($pending_gigs); ?></div><div class="metric-note">Gigs waiting for approval</div></div>
+    </div>
 
-    <?php if (empty($pending_users)): ?>
-        <div class="card" style="text-align: center; color: #a0aec0; padding: 3rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-            🎉 All caught up! No pending registrations need evaluation right now.
+    <div class="section-card admin-panel" id="approvals">
+        <div class="section-head">
+            <h2>Pending Users</h2>
+            <a href="admin_users.php">See all users</a>
         </div>
-    <?php else: ?>
-        <div class="card" style="padding: 0; overflow-x: auto; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
-                <thead>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Full Name</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Email Address</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Role Type</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Registered On</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0; text-align: right;">Actions</th>
-                    </tr>
-                </thead>
+        <?php if (empty($pending_users)): ?>
+            <div class="muted-empty">No user registrations are waiting for review.</div>
+        <?php else: ?>
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Name</th><th>Role</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>
                 <tbody>
                     <?php foreach ($pending_users as $user): ?>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-                            <td style="padding: 1.2rem 1.5rem; font-weight: 500; color: #fff;"><?php echo htmlspecialchars($user['fullname']); ?></td>
-                            <td style="padding: 1.2rem 1.5rem; color: #a0aec0;"><?php echo htmlspecialchars($user['email']); ?></td>
-                            <td style="padding: 1.2rem 1.5rem;">
-                                <span style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: <?php echo $user['role'] === 'student' ? '#2ecc71' : '#60a5fa'; ?>;">
-                                    <?php echo htmlspecialchars($user['role']); ?>
-                                </span>
-                            </td>
-                            <td style="padding: 1.2rem 1.5rem; color: #a0aec0; font-size: 0.85rem;"><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
-                            <td style="padding: 1.2rem 1.5rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
-                                <a href="admin_approve.php?approve_id=<?php echo $user['id']; ?>" class="btn btn-primary" style="background: #2ecc71; color: white; text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; display: inline-block;">
-                                    Approve
-                                </a>
-                                <a href="admin_approve.php?reject_id=<?php echo $user['id']; ?>" class="btn btn-outline" style="text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; color: #f87171; border: 1px solid rgba(239,68,68,0.2); display: inline-block;" onclick="return confirm('Are you sure you want to reject this user?');">
-                                    Reject
-                                </a>
-                            </td>
+                        <tr>
+                            <td><div style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($user['fullname']); ?></div><div style="color:#94a3b8; font-size:0.84rem;"><?php echo htmlspecialchars($user['email']); ?></div></td>
+                            <td><span class="pill <?php echo $user['role'] === 'student' ? 'pill-success' : 'pill-info'; ?>"><?php echo htmlspecialchars($user['role']); ?></span></td>
+                            <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
+                            <td><div class="action-stack"><?php echo admin_action_button('user', (int)$user['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('user', (int)$user['id'], 'suspend', 'Suspend', 'danger'); ?><?php echo admin_action_button('user', (int)$user['id'], 'reject', 'Reject', 'danger'); ?></div></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
-    <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 
-    <h2 style="margin-top: 3.5rem; margin-bottom: 0.5rem; font-size: 2rem; color: #fff;">Pending Clubs</h2>
-    <p style="color: #a0aec0; margin-bottom: 2rem;">Review pending club registration approval requests.</p>
-
-    <?php if (empty($pending_clubs)): ?>
-        <div class="card" style="text-align: center; color: #a0aec0; padding: 3rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-            🎉 All caught up! No pending club registrations need evaluation right now.
+    <div class="section-card admin-panel" style="margin-top:1rem;" id="clubs">
+        <div class="section-head">
+            <h2>Pending Clubs</h2>
+            <a href="admin_clubs.php">See all clubs</a>
         </div>
-    <?php else: ?>
-        <div class="card" style="padding: 0; overflow-x: auto; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); margin-bottom: 3rem;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
-                <thead>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Club Name</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Secret Access Code</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Contribution Rate (%)</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0;">Description</th>
-                        <th style="padding: 1rem 1.5rem; color: #a0aec0; text-align: right;">Actions</th>
-                    </tr>
-                </thead>
+        <?php if (empty($pending_clubs)): ?>
+            <div class="muted-empty">No club requests are waiting for approval.</div>
+        <?php else: ?>
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Club</th><th>Code</th><th>Share</th><th style="text-align:right;">Actions</th></tr></thead>
                 <tbody>
                     <?php foreach ($pending_clubs as $club): ?>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-                            <td style="padding: 1.2rem 1.5rem; font-weight: 500; color: #fff;"><?php echo htmlspecialchars($club['club_name']); ?></td>
-                            <td style="padding: 1.2rem 1.5rem; color: #a0aec0; font-family: monospace; font-size: 0.95rem; font-weight: bold;"><?php echo htmlspecialchars($club['club_code']); ?></td>
-                            <td style="padding: 1.2rem 1.5rem; color: #60a5fa; font-weight: bold;"><?php echo number_format($club['contribution_rate'], 2); ?>%</td>
-                            <td style="padding: 1.2rem 1.5rem; color: #a0aec0; font-size: 0.85rem; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($club['description']); ?>">
-                                <?php echo htmlspecialchars($club['description']); ?>
-                            </td>
-                            <td style="padding: 1.2rem 1.5rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
-                                <a href="admin_approve.php?approve_club_id=<?php echo $club['id']; ?>" class="btn btn-primary" style="background: #2ecc71; color: white; text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; display: inline-block;">
-                                    Approve
-                                </a>
-                                <a href="admin_approve.php?reject_club_id=<?php echo $club['id']; ?>" class="btn btn-outline" style="text-decoration: none; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 6px; color: #f87171; border: 1px solid rgba(239,68,68,0.2); display: inline-block;" onclick="return confirm('Are you sure you want to reject this club registration?');">
-                                    Reject
-                                </a>
-                            </td>
+                        <tr>
+                            <td><div style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($club['club_name']); ?></div><div style="color:#94a3b8; font-size:0.84rem;">Submitted <?php echo date('M d, Y', strtotime($club['created_at'])); ?></div></td>
+                            <td><span class="pill"><?php echo htmlspecialchars($club['club_code']); ?></span></td>
+                            <td><?php echo number_format((float)$club['contribution_rate'], 2); ?>%</td>
+                            <td><div class="action-stack"><?php echo admin_action_button('club', (int)$club['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('club', (int)$club['id'], 'suspend', 'Suspend', 'danger'); ?><?php echo admin_action_button('club', (int)$club['id'], 'reject', 'Reject', 'danger'); ?></div></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="section-card admin-panel" style="margin-top:1rem;" id="gigs">
+        <div class="section-head">
+            <h2>Pending Gigs</h2>
+            <a href="admin_gigs.php">See all gigs</a>
         </div>
-    <?php endif; ?>
+        <?php if (empty($pending_gigs)): ?>
+            <div class="muted-empty">No gig submissions are waiting for review.</div>
+        <?php else: ?>
+            <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Title</th><th>Freelancer</th><th>Price</th><th>Category</th><th style="text-align:right;">Actions</th></tr></thead>
+                <tbody>
+                    <?php foreach ($pending_gigs as $gig): ?>
+                        <tr>
+                            <td style="font-weight:700; color:#fff;"><?php echo htmlspecialchars($gig['title']); ?></td>
+                            <td><?php echo htmlspecialchars($gig['student_name']); ?></td>
+                            <td>Rs. <?php echo number_format((float)$gig['price'], 0); ?></td>
+                            <td><span class="pill pill-info"><?php echo htmlspecialchars($gig['category']); ?></span></td>
+                            <td><div class="action-stack"><?php echo admin_action_button('gig', (int)$gig['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('gig', (int)$gig['id'], 'suspend', 'Suspend', 'danger'); ?></div></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>
