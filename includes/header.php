@@ -31,6 +31,18 @@ include 'db.php';
             border: 1px solid var(--border);
             font-weight: 500;
         }
+        .user-greeting {
+            font-size: 0.92rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--green-dim);
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -45,8 +57,12 @@ include 'db.php';
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                 <li><a href="student-post-job.php">Post a Gig</a></li>
+                <li><a href="student-post-job.php">Post a Gig</a></li>
                 <li><a href="student-dashboard.php">Dashboard</a></li>
+            <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
+                <li><a href="club_dashboard.php">Dashboard</a></li>
+            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
+                <li><a href="admin_approve.php">Admin Panel</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
