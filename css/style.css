@@ -109,10 +109,8 @@ a {
     z-index: -1;
     pointer-events: none;
     background:
-        radial-gradient(ellipse 70% 60% at 10% 0%, rgba(16, 185, 129, 0.13) 0%, transparent 70%),
-        radial-gradient(ellipse 60% 50% at 90% 20%, rgba(99, 102, 241, 0.09) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 50% at 50% 80%, rgba(244, 114, 182, 0.07) 0%, transparent 70%),
-        #f0fdf8;
+
+        #ffffff;
 }
 
 /* ────────────────────────────────────────────
@@ -270,6 +268,7 @@ nav.nav-scrolled {
     max-width: 1280px;
     margin: 0 auto;
     gap: 4rem;
+    background: #ffffff;
 }
 
 .hero-left,
@@ -284,8 +283,8 @@ nav.nav-scrolled {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--green-dim);
-    color: var(--green);
+    background: var(--green);
+    color: var(--bg);
     border: 1px solid rgba(16, 185, 129, 0.25);
     padding: 6px 16px;
     border-radius: 50px;
@@ -383,7 +382,7 @@ nav.nav-scrolled {
 .hero-visual {
     flex: 0 0 400px;
     position: relative;
-    animation: fadeUp 0.7s 0.25s ease both;
+
     display: flex;
     justify-content: center;
     align-items: center;
@@ -414,12 +413,14 @@ nav.nav-scrolled {
 /* Missing CSS 1 Hero Image Handler */
 .hero-image {
     width: 100%;
-    max-width: 460px;
+    max-width: 560px;
     height: auto;
     border-radius: 24px;
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border);
-    animation: floatImage 6s ease-in-out infinite;
+    animation: none;
+
+
 }
 
 .card-profile-row {
@@ -839,7 +840,7 @@ nav.nav-scrolled {
 ──────────────────────────────────────────── */
 .stats-section,
 .stats {
-    background: linear-gradient(135deg, var(--green) 0%, #059669 50%, var(--blue) 100%);
+    background: linear-gradient(135deg, var(--green) 0%, #059669 50%);
     padding: 70px 7%;
 }
 
@@ -1399,55 +1400,11 @@ footer {
     }
 }
 
-@keyframes float1 {
 
-    0%,
-    100% {
-        transform: translateY(0);
-    }
 
-    50% {
-        transform: translateY(-10px);
-    }
-}
 
-@keyframes float2 {
 
-    0%,
-    100% {
-        transform: translateY(0);
-    }
 
-    50% {
-        transform: translateY(-14px);
-    }
-}
-
-@keyframes floatBlob {
-    0% {
-        transform: translate(0, 0) scale(1);
-    }
-
-    50% {
-        transform: translate(50px, 40px) scale(1.1);
-    }
-
-    100% {
-        transform: translate(-30px, -50px) scale(0.95);
-    }
-}
-
-@keyframes floatImage {
-
-    0%,
-    100% {
-        transform: translateY(0) rotate(0deg);
-    }
-
-    50% {
-        transform: translateY(-15px) rotate(1deg);
-    }
-}
 
 /* ────────────────────────────────────────────
    RESPONSIVE MEDIA QUERIES
