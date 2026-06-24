@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include 'db.php'; 
+include_once __DIR__ . '/db.php'; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,26 +49,35 @@ include 'db.php';
     <nav id="nav">
         <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
-            <li><a href="student_freelancer_site.php">Home</a></li>
-            <li><a href="jobs.php">Browse Jobs</a></li>
             <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
-                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
-                <li><a href="admin_approve.php">Approvals</a></li>
+                <!-- No navbar links for admin -->
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+                <li><a href="student_freelancer_site.php">Home</a></li>
+                <li><a href="jobs.php">Browse Jobs</a></li>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
+                <li><a href="student_freelancer_site.php">Home</a></li>
+                <li><a href="jobs.php">Browse Jobs</a></li>
                 <li><a href="student-post-job.php">Post a Gig</a></li>
                 <li><a href="student-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
                 <li><a href="club_dashboard.php">Dashboard</a></li>
-            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
-                <li><a href="admin_approve.php">Admin Panel</a></li>
+            <?php else: ?>
+                <li><a href="student_freelancer_site.php">Home</a></li>
+                <li><a href="jobs.php">Browse Jobs</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
-            <?php if(isset($_SESSION['user_id'])): 
-                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
-                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+            <?php if(isset($_SESSION['user_id'])):
+                if ($_SESSION['role'] === 'student') {
+                    $profile_page = 'studentProfile.php';
+                } elseif ($_SESSION['role'] === 'client') {
+                    $profile_page = 'clientProfile.php';
+                } else {
+                    $profile_page = 'adminProfile.php';
+                }
+
+                if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
                     $profile_pic = '/unilance/uploads/' . $pure_filename;
                 } else {
@@ -90,15 +99,13 @@ include 'db.php';
             <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
                 <div class="nav-profile">
                     <span class="user-greeting">
-                        <i class="fas fa-users" style="color: var(--green); margin-right: 5px;"></i>
+                        <i class="fas fa-users" style="color: var(--green);"></i>
                         <strong><?php echo htmlspecialchars($_SESSION['club_name'] ?? 'Club'); ?></strong>
                     </span>
-                    <a href="club_dashboard.php" class="btn btn-outline">
-                    Dashboard
-                    </a>
+                    <a href="club_dashboard.php" class="btn btn-outline">Dashboard</a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
-            <?php else: ?>  
+            <?php else: ?>
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
         </div>
