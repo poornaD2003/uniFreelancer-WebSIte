@@ -61,6 +61,8 @@ if ($stmt) {
     $stmt->close();
 }
 ?>
+
+
 <div class="wrap">
     <aside class="sidebar">
         <h2>Student Hub</h2>
@@ -77,7 +79,7 @@ if ($stmt) {
             <div class="card"><strong>Rs. <?php echo number_format($earnings,2); ?></strong><div>Total Earnings</div></div>
             <div class="card"><strong><?php echo $gigs_count; ?></strong><div>Gigs Posted</div></div>
             <div class="card"><strong><?php echo $orders_count; ?></strong><div>Orders Received</div></div>
-            <div class="card"><strong><?php echo htmlspecialchars($club_name); ?></strong><div>Club Affiliation</div></div>
+             <div class="card"><strong><?php echo htmlspecialchars($club_name); ?></strong><div>Club Affiliation</div></div>
             <div class="card" style="border-left: 4px solid var(--primary);"><strong>Rs. <?php echo number_format($club_contributions, 2); ?></strong><div>Club Contribution</div></div>
             <div class="card"><strong><?php echo $profile_exists ? '✓ Active' : '○ Pending'; ?></strong><div>Profile Status</div></div>
         </div>

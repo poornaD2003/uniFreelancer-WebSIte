@@ -17,6 +17,19 @@ include_once __DIR__ . '/db.php';
             display: flex;
             align-items: center;
             gap: 15px;
+
+        }
+        .user-greeting {
+            font-size: 0.92rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--green-dim);
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            font-weight: 500;
         }
         .user-greeting {
             font-size: 0.92rem;
@@ -55,6 +68,7 @@ include_once __DIR__ . '/db.php';
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
+<<<<<<< HEAD
             <?php if(isset($_SESSION['user_id'])):
                 if ($_SESSION['role'] === 'student') {
                     $profile_page = 'studentProfile.php';
@@ -65,11 +79,17 @@ include_once __DIR__ . '/db.php';
                 }
 
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+=======
+            <?php if(isset($_SESSION['user_id'])): 
+                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
+                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
+>>>>>>> 51af2466c40eb904fe8bad67da69fad4b70d3397
                     $pure_filename = basename($_SESSION['profile_pic']); 
                     $profile_pic = '/unilance/uploads/' . $pure_filename;
                 } else {
                     $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                 }
+<<<<<<< HEAD
 
                 $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
                 $icon_class = ($_SESSION['role'] === 'admin') ? 'fa-user-shield' : 'fa-user';
@@ -83,10 +103,21 @@ include_once __DIR__ . '/db.php';
                         <img src="<?php echo htmlspecialchars($profile_pic); ?>"
                              alt="Profile Picture"
                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #10b981);"
+=======
+                $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
+                $icon_class = ($_SESSION['role'] === 'admin') ? 'fa-user-shield' : 'fa-user';
+            ?>
+             <div class="nav-profile" style="display: flex; align-items: center; gap: 12px;">
+                    <a href="<?php echo $profile_page; ?>">
+                        <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
+                             alt="Profile Picture" 
+                             style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #7c3aed);"
+>>>>>>> 51af2466c40eb904fe8bad67da69fad4b70d3397
                              onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
+               
             <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
                 <div class="nav-profile">
                     <span class="user-greeting">
