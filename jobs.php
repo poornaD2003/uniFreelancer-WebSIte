@@ -227,9 +227,13 @@ $categories = [
         <div class="gig-grid">
             <?php if ($result && $jobCount > 0): ?>
                 <?php while ($job = $result->fetch_assoc()):
-                    $img_path = (!empty($job['image']) && $job['image'] !== 'default.png')
-                        ? "uploads/" . htmlspecialchars($job['image'])
-                        : "images/hero_illustration.png";
+                    // Take only the first image from the comma-separated list
+                    $raw_images = (!empty($job['image']) && $job['image'] !== 'default.png')
+                        ? array_values(array_filter(array_map('trim', explode(',', $job['image']))))
+                        : [];
+                    $img_path = !empty($raw_images)
+                        ? 'uploads/' . htmlspecialchars($raw_images[0])
+                        : 'images/hero_illustration.png';
                 ?>
                 <div class="gig-card">
                     <!-- Cover image -->
