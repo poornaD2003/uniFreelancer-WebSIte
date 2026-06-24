@@ -69,7 +69,7 @@ $steps = [
     <p class="hero-sub">The exclusive freelance marketplace for university students. Hire skilled developers, designers, and writers — fast, affordable, and verified.</p>
     <div class="hero-btns">
       <a href="jobs.php" class="btn btn-primary">Browse Gigs </a>
-      <a href="register.php" class="btn btn-ghost">Start Freelancing</a>
+      
     </div>
     <div class="hero-trust">
       <div class="trust-text"><strong>1,200+ projects</strong> delivered with a <strong>4.9★</strong> avg rating</div>
@@ -114,22 +114,25 @@ $steps = [
     
     <div class="freelancer-grid" style="margin-top: 3rem;">
       <?php 
-      if ($top_gigs_result && $top_gigs_result->num_rows > 0): 
-        $j = 0;
-        while($g = $top_gigs_result->fetch_assoc()): 
-          $gig_price = ($g['price'] > 0) ? "Rs. " . number_format($g['price'], 0) : "Flexible";
-          $short_desc = (strlen($g['description']) > 90) ? mb_substr($g['description'], 0, 90) . '...' : $g['description'];
-          
-          // 🛠️ GIG IMAGE FIX: පාර පිරිසිදු කර නිවැරදි path එක සාදා ගැනීම
-          if (!empty($g['image']) && $g['image'] !== 'default.png') {
-              $pure_gig_img = basename($g['image']);
-              $img_path = "/unilance/uploads/" . $pure_gig_img;
-          } else {
-              $img_path = "images/hero_illustration.png"; 
-          }
-              
-          $initial_name = !empty($g['fullname']) ? strtoupper(mb_substr($g['fullname'], 0, 1)) : "👤";
-      ?>
+if ($top_gigs_result && $top_gigs_result->num_rows > 0): 
+    $j = 0;
+    while($g = $top_gigs_result->fetch_assoc()): 
+        $gig_price = ($g['price'] > 0) ? "Rs. " . number_format($g['price'], 0) : "Flexible";
+        $short_desc = (strlen($g['description']) > 90) ? mb_substr($g['description'], 0, 90) . '...' : $g['description'];
+        
+        $gig_images_array = !empty($g['image']) ? explode(',', $g['image']) : [];
+        
+        $first_gig_img = !empty($gig_images_array[0]) ? trim($gig_images_array[0]) : '';
+
+        if (!empty($first_gig_img) && $first_gig_img !== 'default.png') {
+            $pure_gig_img = basename($first_gig_img);
+            $img_path = "/unilance/uploads/" . $pure_gig_img;
+        } else {
+            $img_path = "images/hero_illustration.png"; 
+        }
+            
+        $initial_name = !empty($g['fullname']) ? strtoupper(mb_substr($g['fullname'], 0, 1)) : "👤";
+?>
         
         <div class="gig-card reveal" style="transition-delay:<?= $j*0.1 ?>s">
             <div class="card-img-wrap">
