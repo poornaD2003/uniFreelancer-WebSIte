@@ -55,7 +55,6 @@ include_once __DIR__ . '/db.php';
         </ul>
         <div class="nav-actions">
             <?php 
-            // ─── 1. USER LOGIN වී ඇත්නම් (Student, Client, Admin) ───
             if(isset($_SESSION['user_id'])):
                 $user_id = $_SESSION['user_id'];
                 
@@ -101,7 +100,6 @@ include_once __DIR__ . '/db.php';
                 </div>
                
             <?php 
-            // ─── 2. CLUB LOGIN වී ඇත්නම් ───
             elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): 
             ?>
                 <div class="nav-profile">
@@ -113,7 +111,6 @@ include_once __DIR__ . '/db.php';
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
             <?php 
-            // ─── 3. LOGIN වී නොමැති නම් (Guest) ───
             else: 
             ?>
                 <a href="login.php" class="btn btn-primary">Join Now</a>
