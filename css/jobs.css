@@ -410,11 +410,26 @@ body {
     box-shadow: 0 12px 30px rgba(0, 0, 0, .08);
 }
 
-/* Cover image */
+/* Cover image & carousel slides */
 .card-img-wrap {
     position: relative;
     overflow: hidden;
     height: 190px;
+    background: #e5e7eb;
+}
+
+/* Each slide is stacked absolutely and fades in/out */
+.card-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.75s ease-in-out;
+    pointer-events: none;
+}
+
+.card-slide.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .card-cover {
@@ -422,11 +437,36 @@ body {
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform .3s;
+    transition: transform 0.4s ease;
 }
 
-.gig-card:hover .card-cover {
-    transform: scale(1.04);
+.gig-card:hover .card-slide.active .card-cover {
+    transform: scale(1.05);
+}
+
+/* Dot indicators at bottom of image */
+.card-dots {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+}
+
+.card-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.45);
+    transition: background 0.3s, transform 0.3s;
+    cursor: pointer;
+}
+
+.card-dot.active {
+    background: #ffffff;
+    transform: scale(1.3);
 }
 
 .heart-btn {
