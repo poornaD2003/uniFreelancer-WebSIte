@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include 'db.php';
+include 'db.php'; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,7 +33,7 @@ include 'db.php';
     </style>
 </head>
 <body>
-    <nav>
+    <nav id="nav">
         <a href="student_freelancer_site.php" class="logo">UniLance</a>
         <ul class="nav-links">
             <li><a href="student_freelancer_site.php">Home</a></li>
@@ -79,7 +79,7 @@ include 'db.php';
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
-            <?php else: ?>
+            <?php else: ?>  
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
         </div>

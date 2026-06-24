@@ -17,11 +17,78 @@ $error_msg = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
+    // 📸 NEW: PROFILE PICTURE UPLOAD LOGIC
+    if (isset($_POST['upload_image'])) {
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0) {
+            $file = $_FILES['profile_image'];
+            $fileName = $file['name'];
+            $fileTmpName = $file['tmp_name'];
+            $fileSize = $file['size'];
+            
+            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $allowedExtensions = ['jpg', 'jpeg', 'png'];
+
+            if (in_array($fileExt, $allowedExtensions)) {
+                if ($fileSize < 5000000) { // Max 5MB
+                    // Unique නමක් සෑදීම (පරණ duplicate path ප්‍රශ්න මඟහරවා ගැනීමට)
+                    $newFileName = "profile_" . $user_id . "_" . time() . "." . $fileExt;
+                    
+                    // Upload වන Folder එක නිවැරදිව තැබීම
+                    $uploadDirectory = 'uploads/';
+                    if (!is_dir($uploadDirectory)) {
+                        mkdir($uploadDirectory, 0777, true);
+                    }
+                    
+                    $fileDestination = $uploadDirectory . $newFileName;
+
+                    if (move_uploaded_file($fileTmpName, $fileDestination)) {
+                        // Database එකේ save කරන්නේ පිරිසිදු file name එක පමණි
+                        $stmtImg = $conn->prepare("UPDATE users SET profile_pic = ? WHERE id = ?");
+                        $stmtImg->bind_param("si", $newFileName, $user_id);
+                        
+                        if ($stmtImg->execute()) {
+                            // 💡 වැදගත්ම කොටස: Header එකට ක්ෂණිකව පෙනීමට Session එක Update කිරීම
+                            $_SESSION['profile_pic'] = $newFileName;
+                            $msg = "Profile picture updated successfully!";
+                        } else {
+                            $error_msg = "Database update failed.";
+                        }
+                        $stmtImg->close();
+                    } else {
+                        $error_msg = "Failed to move uploaded file.";
+                    }
+                } else {
+                    $error_msg = "Your file is too large. Max size is 5MB.";
+                }
+            } else {
+                $error_msg = "Invalid file type. Only JPG, JPEG, and PNG are allowed.";
+            }
+        } else {
+            $error_msg = "Please select a valid image file to upload.";
+        }
+    }
+    
     if (isset($_POST['update_profile'])) {
         $fullname = trim($_POST['fullname']);
         $uni_name = $_POST['university_name'] ?? '';
         $faculty = $_POST['faculty'] ?? '';
         $dept = $_POST['department'] ?? '';
+        $clubs = trim($_POST['club_affiliations']);
+
+        $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
+        $stmt1->bind_param("si", $fullname, $user_id);
+        $stmt1->execute();
+        $stmt1->close();
+        
+        // Header එකේ fullname එකත් update වීමට
+        $_SESSION['fullname'] = $fullname;
+
+        $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations) 
+                                VALUES (?, ?, ?, ?, ?) 
+                                ON DUPLICATE KEY UPDATE university_name = ?, faculty = ?, department = ?, club_affiliations = ?");
+        $stmt2->bind_param("issssssss", $user_id, $uni_name, $faculty, $dept, $clubs, $uni_name, $faculty, $dept, $clubs);
+        $stmt2->execute();
+        $stmt2->close();
         
         // Fetch current profile to check if they are already in a club
         $stmtProfileCheck = $conn->prepare("SELECT club_id, club_affiliations FROM student_profiles WHERE user_id = ? LIMIT 1");
@@ -163,7 +230,6 @@ if (!empty($profile_data['club_id'])) {
     }
 }
 
-// Skills Fetch කිරීම
 $stmtSkills = $conn->prepare("SELECT * FROM student_skills WHERE user_id = ?");
 $stmtSkills->bind_param("i", $user_id);
 $stmtSkills->execute();
@@ -187,6 +253,13 @@ $faculties = [
 ];
 $saved_faculty = $profile_data['faculty'] ?? '';
 $saved_department = $profile_data['department'] ?? '';
+
+// Current UI Display Image URL සෑදීම
+if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.png') {
+    $display_pic = '/unilance/uploads/' . basename($user_data['profile_pic']);
+} else {
+    $display_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+}
 ?>
 
 <div class="container card fade-in" style="max-width: 750px; margin: 140px auto 40px; padding: 2.5rem;">
@@ -203,6 +276,20 @@ $saved_department = $profile_data['department'] ?? '';
             <?php echo htmlspecialchars($error_msg); ?>
         </div>
     <?php endif; ?>
+
+    <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 2rem;">
+        <h3 style="color: var(--primary); align-self: flex-start; margin-bottom: 1.25rem; font-size: 1.2rem; font-weight: 600;">Profile Picture</h3>
+        
+        <img src="<?php echo htmlspecialchars($display_pic); ?>" 
+             alt="Current Profile Picture" 
+             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary, #7c3aed); margin-bottom: 1rem;"
+             onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
+        
+        <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%; max-width: 320px;">
+            <input type="file" name="profile_image" accept="image/png, image/jpeg, image/jpg" required style="font-size: 0.9rem; color: var(--text-muted);">
+            <button type="submit" name="upload_image" class="btn btn-outline" style="width: 100%; justify-content: center; padding: 0.5rem;">Upload New Image</button>
+        </form>
+    </div>
 
     <form method="POST" style="margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 2rem;">
         <h3 style="color: var(--primary); margin-bottom: 1.25rem; font-size: 1.2rem; font-weight: 600;">Academic & Personal Info</h3>

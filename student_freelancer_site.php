@@ -62,51 +62,24 @@ $steps = [
 <body>
 <div class="mesh"></div>
 
-
-
-<!-- ── HERO ── -->
 <section class="hero" style="max-width:1280px;margin:0 auto;padding:110px 7% 60px;display:flex;align-items:center;gap:4rem;">
   <div class="hero-left">
-    <div class="hero-badge"><span class="pulse"></span> 500+ students actively freelancing</div>
+    <div class="hero-badge">500+ students actively freelancing</div>
     <h1>Find <em>Student Talent</em><br>for Any Project</h1>
     <p class="hero-sub">The exclusive freelance marketplace for university students. Hire skilled developers, designers, and writers — fast, affordable, and verified.</p>
     <div class="hero-btns">
-      <a href="jobs.php" class="btn btn-primary">Browse Gigs ↗</a>
+      <a href="jobs.php" class="btn btn-primary">Browse Gigs </a>
       <a href="register.php" class="btn btn-ghost">Start Freelancing</a>
     </div>
     <div class="hero-trust">
-     
       <div class="trust-text"><strong>1,200+ projects</strong> delivered with a <strong>4.9★</strong> avg rating</div>
     </div>
   </div>
   <div class="hero-right">
-    <div class="hero-main-card">
-      <div class="card-profile-row">
-        <div class="card-avatar">👩‍💻</div>
-        <div>
-          <div class="card-name">Aisha Rahman</div>
-          <div class="card-uni">🎓 MIT · Computer Science</div>
-          <div class="card-stars">★★★★★ 4.9 (34 reviews)</div>
-        </div>
-      </div>
-      <div class="card-skill-tags">
-        <span class="skill-tag">React</span>
-        <span class="skill-tag">Node.js</span>
-        <span class="skill-tag">Firebase</span>
-        <span class="skill-tag">UI/UX</span>
-      </div>
-      <div class="card-rate-row">
-        <div class="card-rate">$28 <span>/ hour</span></div>
-        <button class="btn btn-primary btn-sm">Hire Now</button>
-      </div>
-    </div>
-    <div class="float-card fc1">✅ Job Completed</div>
-    <div class="float-card fc2">💬 3 new messages</div>
-    <div class="float-card fc3">🔒 Secure Payments</div>
+    <img src="images/imag2.png" alt="Student Freelancer" class="hero-image">
   </div>
 </section>
 
-<!-- ── SEARCH ── -->
 <div class="search-section">
   <form action="jobs.php" method="GET" class="search-bar">
     <input type="text" name="search" placeholder='Try "React developer", "logo design", "Python tutor"…'/>
@@ -131,7 +104,7 @@ $steps = [
   </div>
 </div>
 
-<section class="section how-section" id="how">
+<section class="section how-section" >
   <div class="section-inner">
     <div class="section-head reveal">
       <span class="sec-tag">Top Gigs</span>
@@ -144,22 +117,23 @@ $steps = [
       if ($top_gigs_result && $top_gigs_result->num_rows > 0): 
         $j = 0;
         while($g = $top_gigs_result->fetch_assoc()): 
-          // මිල ගණන් සහ විස්තර සකසා ගැනීම
           $gig_price = ($g['price'] > 0) ? "Rs. " . number_format($g['price'], 0) : "Flexible";
           $short_desc = (strlen($g['description']) > 90) ? mb_substr($g['description'], 0, 90) . '...' : $g['description'];
           
-          // 🛠️ IMAGE FIX: SQL Query එකේ තියෙන g.image එකට අනුව පාර (Path) සකස් කිරීම
-          $img_path = (!empty($g['image']) && $g['image'] !== 'default.png')
-              ? "uploads/" . htmlspecialchars($g['image'])
-              : "images/hero_illustration.png"; // Image එකක් නැතිනම් වැටෙන Default පින්තූරය
+          // 🛠️ GIG IMAGE FIX: පාර පිරිසිදු කර නිවැරදි path එක සාදා ගැනීම
+          if (!empty($g['image']) && $g['image'] !== 'default.png') {
+              $pure_gig_img = basename($g['image']);
+              $img_path = "/unilance/uploads/" . $pure_gig_img;
+          } else {
+              $img_path = "images/hero_illustration.png"; 
+          }
               
-          // Avatar එක සඳහා නමේ මුල් අකුර
           $initial_name = !empty($g['fullname']) ? strtoupper(mb_substr($g['fullname'], 0, 1)) : "👤";
       ?>
         
         <div class="gig-card reveal" style="transition-delay:<?= $j*0.1 ?>s">
             <div class="card-img-wrap">
-                <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($g['title']); ?>" class="card-cover" style="width: 100%; height: 200px; object-fit: cover;">
+                <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($g['title']); ?>" class="card-cover" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.onerror=null; this.src='images/hero_illustration.png';">
                 <button class="heart-btn" aria-label="Save to favourites">
                     <i class="far fa-heart"></i>
                 </button>
@@ -217,7 +191,6 @@ $steps = [
   </div>
 </section>
 
-<!-- ── CATEGORIES ── -->
 <section class="section" id="categories">
   <div class="section-inner">
     <div class="section-head reveal">
@@ -239,7 +212,6 @@ $steps = [
   </div>
 </section>
 
-<!-- ── STATS ── -->
 <div class="stats-section">
   <div class="stats-inner">
     <?php foreach($stats as $s): ?>
@@ -251,7 +223,6 @@ $steps = [
   </div>
 </div>
 
-<!-- ── FEATURED FREELANCERS ── -->
 <section class="section" id="freelancers">
   <div class="section-inner">
     <div class="section-head reveal">
@@ -265,25 +236,33 @@ $steps = [
       if ($featured_result && $featured_result->num_rows > 0): 
         $i = 0;
         while($f = $featured_result->fetch_assoc()): 
-          // Tags සකසා ගැනීම (Department සහ Faculty එක එකතු කර)
           $tags = array_filter([$f['department'], $f['faculty']]);
           if(!empty($f['club_affiliations'])) {
               $clubs = explode(',', $f['club_affiliations']);
-              $tags = array_merge($tags, array_slice($clubs, 0, 2)); // උපරිම ක්ලබ් 2ක් පමණක් ටැග් වලට ගනී
+              $tags = array_merge($tags, array_slice($clubs, 0, 2)); 
           }
           
-          // මිල ගණන් සහ ජොබ්ස් ගණන නිවැරදිව සැකසීම
           $rate_display = ($f['min_rate'] > 0) ? "Rs. " . number_format($f['min_rate']) : "Flexible";
           $jobs_count = $f['jobs_completed'] ? $f['jobs_completed'] : 0;
           $initial = mb_substr($f['fullname'], 0, 1);
+
+          // 🛠️ FREELANCER PROFILE PIC FIX: පාර පිරිසිදු කර නිවැරදි path එක සාදා ගැනීම
+          if (!empty($f['profile_pic']) && $f['profile_pic'] !== 'default.png') {
+              $pure_avatar_name = basename($f['profile_pic']);
+              $final_avatar_path = "/unilance/uploads/" . $pure_avatar_name;
+              $has_image = true;
+          } else {
+              $final_avatar_path = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+              $has_image = false;
+          }
       ?>
       <div class="fl-card reveal" style="transition-delay:<?= $i*0.1 ?>s">
         <div class="fl-top">
-          <div class="fl-av">
-            <?php if($f['profile_pic'] !== 'default.png'): ?>
-                <img src="uploads/<?= $f['profile_pic'] ?>" alt="<?= $f['fullname'] ?>" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+          <div class="fl-av" style="display:flex; align-items:center; justify-content:center; background:#e0e0e0; font-weight:bold; font-size:16px;">
+            <?php if($has_image): ?>
+                <img src="<?= $final_avatar_path ?>" alt="<?= htmlspecialchars($f['fullname']) ?>" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
             <?php else: ?>
-                <?= $initial ?>👤
+                <?= htmlspecialchars($initial) ?>👤
             <?php endif; ?>
           </div>
           <div class="fl-info">
@@ -314,7 +293,6 @@ $steps = [
       <?php endif; ?>
     </div>
 
-    <!-- ── SHOW MORE BUTTON ── -->
     <div style="text-align: center; margin-top: 3.5rem;">
         <a href="jobs.php" class="btn-line" style="display: inline-block; padding: 12px 36px; text-decoration: none; font-weight: 600; font-size: 14.5px; transition: all 0.3s;">
             Show More <i class="ti ti-arrow-right" style="vertical-align: middle; margin-left: 4px;"></i>
@@ -324,7 +302,6 @@ $steps = [
   </div>
 </section>
 
-<!-- ── HOW IT WORKS ── -->
 <section class="section how-section" id="how">
   <div class="section-inner">
     <div class="section-head reveal">
@@ -345,7 +322,6 @@ $steps = [
   </div>
 </section>
 
-<!-- ── CTA ── -->
 <section class="cta-section">
   <div class="cta-box reveal">
     <h2>Ready to Build <em>Something Great?</em></h2>
@@ -356,21 +332,14 @@ $steps = [
   </div>
 </section>
 
-<!-- ── FOOTER ── -->
-<footer>
-  <div class="footer-logo">UniGigs<span>.</span></div>
-  <p>The student freelance marketplace</p>
-  <div class="footer-links">
-    <a href="#">About</a><a href="#">Jobs</a><a href="#">Pricing</a>
-    <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a>
-  </div>
-  <p class="footer-copy">© <?= date('Y') ?> UniGigs. Built for students, by students. ❤️</p>
-</footer>
+<?php include 'includes/footer.php'; ?>
+
 
 <script>
 // ── Navbar scroll
 window.addEventListener('scroll',()=>{
-  document.getElementById('nav').classList.toggle('scrolled',scrollY>40);
+  const nav = document.getElementById('nav');
+  if(nav) nav.classList.toggle('scrolled',scrollY>40);
 });
 
 // ── Scroll reveal

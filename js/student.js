@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Automatically highlight active sidebar link based on current path
     const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('.sidebar nav a');
 
@@ -11,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 2. Auto-dismiss alert notification banners after 4 seconds
     const alerts = document.querySelectorAll('.main div[style*="background"]');
     alerts.forEach(alert => {
         setTimeout(() => {
