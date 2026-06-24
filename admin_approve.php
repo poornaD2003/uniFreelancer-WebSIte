@@ -99,7 +99,7 @@ include 'includes/header.php';
                         <tr>
                             <td><div style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($user['fullname']); ?></div><div style="color:#64748b; font-size:0.84rem;"><?php echo htmlspecialchars($user['email']); ?></div></td>
                             <td><span class="pill <?php echo $user['role'] === 'student' ? 'pill-success' : 'pill-info'; ?>"><?php echo htmlspecialchars($user['role']); ?></span></td>
-                            <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
+                            <td style="white-space: nowrap;"><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
                             <td><div class="action-stack"><?php echo admin_action_button('user', (int)$user['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('user', (int)$user['id'], 'suspend', 'Suspend', 'danger'); ?><?php echo admin_action_button('user', (int)$user['id'], 'reject', 'Reject', 'danger'); ?></div></td>
                         </tr>
                     <?php endforeach; ?>
@@ -119,13 +119,14 @@ include 'includes/header.php';
         <?php else: ?>
             <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>Club</th><th>Code</th><th>Share</th><th style="text-align:right;">Actions</th></tr></thead>
+                <thead><tr><th>Club</th><th>Code</th><th>Share</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>
                 <tbody>
                     <?php foreach ($pending_clubs as $club): ?>
                         <tr>
-                            <td><div style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($club['club_name']); ?></div><div style="color:#64748b; font-size:0.84rem;">Submitted <?php echo date('M d, Y', strtotime($club['created_at'])); ?></div></td>
+                            <td><div style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($club['club_name']); ?></div></td>
                             <td><span class="pill"><?php echo htmlspecialchars($club['club_code']); ?></span></td>
                             <td><?php echo number_format((float)$club['contribution_rate'], 2); ?>%</td>
+                            <td style="white-space: nowrap;"><?php echo date('M d, Y', strtotime($club['created_at'])); ?></td>
                             <td><div class="action-stack"><?php echo admin_action_button('club', (int)$club['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('club', (int)$club['id'], 'suspend', 'Suspend', 'danger'); ?><?php echo admin_action_button('club', (int)$club['id'], 'reject', 'Reject', 'danger'); ?></div></td>
                         </tr>
                     <?php endforeach; ?>
@@ -145,7 +146,7 @@ include 'includes/header.php';
         <?php else: ?>
             <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>Title</th><th>Freelancer</th><th>Price</th><th>Category</th><th style="text-align:right;">Actions</th></tr></thead>
+                <thead><tr><th>Title</th><th>Freelancer</th><th>Price</th><th>Category</th><th>Submitted</th><th style="text-align:right;">Actions</th></tr></thead>
                 <tbody>
                     <?php foreach ($pending_gigs as $gig): ?>
                         <tr>
@@ -153,6 +154,7 @@ include 'includes/header.php';
                             <td><?php echo htmlspecialchars($gig['student_name']); ?></td>
                             <td>Rs. <?php echo number_format((float)$gig['price'], 0); ?></td>
                             <td><span class="pill pill-info"><?php echo htmlspecialchars($gig['category']); ?></span></td>
+                            <td style="white-space: nowrap;"><?php echo date('M d, Y', strtotime($gig['created_at'])); ?></td>
                             <td><div class="action-stack"><?php echo admin_action_button('gig', (int)$gig['id'], 'approve', 'Approve'); ?><?php echo admin_action_button('gig', (int)$gig['id'], 'suspend', 'Suspend', 'danger'); ?></div></td>
                         </tr>
                     <?php endforeach; ?>

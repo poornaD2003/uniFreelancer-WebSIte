@@ -94,7 +94,7 @@ include 'includes/header.php';
                             <td><span class="pill pill-info"><?php echo htmlspecialchars($gig['category']); ?></span></td>
                             <td><span class="pill <?php echo admin_status_class('gig', $gig['status']); ?>"><?php echo htmlspecialchars(admin_status_label('gig', $gig['status'])); ?></span></td>
                             <td>Rs. <?php echo number_format((float)$gig['price'], 0); ?></td>
-                            <td><?php echo date('M d, Y', strtotime($gig['created_at'])); ?></td>
+                            <td style="white-space: nowrap;"><?php echo date('M d, Y', strtotime($gig['created_at'])); ?></td>
                             <td><div class="action-stack">
                                 <?php if ($gig['status'] === 'pending'): ?>
                                     <?php echo admin_action_button('gig', (int)$gig['id'], 'approve', '✓ Approve'); ?>

@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id'
         $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['active', $id]);
         $message = 'User restored successfully.';
     } elseif ($action === 'suspend') {
-        $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['suspend', $id]);
+        $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['suspended', $id]);
         $message = 'User suspended successfully.';
     } elseif ($action === 'reject') {
         $ok = admin_post_query($conn, 'DELETE FROM users WHERE id = ?', 'i', [$id]);
@@ -44,7 +44,7 @@ $stats = [
     'total' => count($all_users),
     'active' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'active'"),
     'pending' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'pending'"),
-    'suspended' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'suspend'"),
+    'suspended' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'suspended'"),
 ];
 
 $flash = $_SESSION['admin_flash'] ?? null;
@@ -107,7 +107,7 @@ include 'includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <td><span class="pill <?php echo admin_status_class('user', $user['status']); ?>"><?php echo htmlspecialchars(admin_status_label('user', $user['status'])); ?></span></td>
-                            <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
+                            <td style="white-space: nowrap;"><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
                             <td>
                                 <div class="action-stack">
                                     <?php if ($user['role'] === 'admin'): ?>
@@ -117,7 +117,7 @@ include 'includes/header.php';
                                         <?php echo admin_action_button('user', (int)$user['id'], 'suspend', '⊘ Suspend', 'danger'); ?>
                                         <?php echo admin_action_button('user', (int)$user['id'], 'reject', '✕ Reject', 'danger'); ?>
                                     <?php else: ?>
-                                        <?php if ($user['status'] === 'suspend'): ?>
+                                        <?php if ($user['status'] === 'suspended'): ?>
                                             <?php echo admin_suspend_toggle_button((int)$user['id'], true); ?>
                                         <?php else: ?>
                                             <?php echo admin_suspend_toggle_button((int)$user['id'], false); ?>

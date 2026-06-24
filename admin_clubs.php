@@ -101,7 +101,7 @@ include 'includes/header.php';
                             <td><span class="pill"><?php echo htmlspecialchars($club['club_code']); ?></span></td>
                             <td><span class="pill <?php echo admin_status_class('club', $club['status']); ?>"><?php echo htmlspecialchars(admin_status_label('club', $club['status'])); ?></span></td>
                             <td><?php echo number_format((float)$club['contribution_rate'], 2); ?>%</td>
-                            <td><?php echo date('M d, Y', strtotime($club['created_at'])); ?></td>
+                            <td style="white-space: nowrap;"><?php echo date('M d, Y', strtotime($club['created_at'])); ?></td>
                             <td><div class="action-stack">
                                 <?php if ($club['status'] === 'pending'): ?>
                                     <?php echo admin_action_button('club', (int)$club['id'], 'approve', '✓ Approve'); ?>

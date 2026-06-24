@@ -12,7 +12,7 @@ if (isset($_SESSION['user_id'])) {
         $stmtCheck->execute();
         $resCheck = $stmtCheck->get_result();
         if ($rowCheck = $resCheck->fetch_assoc()) {
-            if ($rowCheck['status'] === 'suspend' || $rowCheck['status'] === 'inactive') {
+            if ($rowCheck['status'] === 'suspended' || $rowCheck['status'] === 'inactive') {
                 session_unset();
                 session_destroy();
                 header("Location: login.php");

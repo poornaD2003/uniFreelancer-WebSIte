@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     fullname VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    phonenumber VARCHAR(20) DEFAULT NULL,
+    address VARCHAR(255) DEFAULT NULL,
     role ENUM('student', 'client', 'admin') NOT NULL,
     status ENUM('active', 'suspended', 'pending') DEFAULT 'pending',
     profile_pic VARCHAR(255) DEFAULT 'default.png',
