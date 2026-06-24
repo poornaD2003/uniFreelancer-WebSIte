@@ -227,33 +227,18 @@ $categories = [
         <div class="gig-grid">
             <?php if ($result && $jobCount > 0): ?>
                 <?php while ($job = $result->fetch_assoc()):
-                    // Parse multiple images (comma-separated)
+                    // Take only the first image from the comma-separated list
                     $raw_images = (!empty($job['image']) && $job['image'] !== 'default.png')
-                        ? array_filter(array_map('trim', explode(',', $job['image'])))
+                        ? array_values(array_filter(array_map('trim', explode(',', $job['image']))))
                         : [];
-                    $images = !empty($raw_images)
-                        ? array_values($raw_images)
-                        : ['images/hero_illustration.png'];
-                    $isDefault = empty($raw_images);
-                    $card_id = 'gig-' . $job['id'];
+                    $img_path = !empty($raw_images)
+                        ? 'uploads/' . htmlspecialchars($raw_images[0])
+                        : 'images/hero_illustration.png';
                 ?>
                 <div class="gig-card">
-                    <!-- Cover image carousel -->
-                    <div class="card-img-wrap" id="wrap-<?php echo $card_id; ?>">
-                        <?php foreach ($images as $idx => $img): ?>
-                            <div class="card-slide<?php echo $idx === 0 ? ' active' : ''; ?>">
-                                <img src="<?php echo $isDefault ? $img : 'uploads/' . htmlspecialchars($img); ?>"
-                                     alt="<?php echo htmlspecialchars($job['title']); ?>"
-                                     class="card-cover">
-                            </div>
-                        <?php endforeach; ?>
-                        <?php if (count($images) > 1): ?>
-                            <div class="card-dots">
-                                <?php foreach ($images as $idx => $img): ?>
-                                    <span class="card-dot<?php echo $idx === 0 ? ' active' : ''; ?>"></span>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
+                    <!-- Cover image -->
+                    <div class="card-img-wrap">
+                        <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($job['title']); ?>" class="card-cover">
                         <button class="heart-btn" aria-label="Save to favourites">
                             <i class="far fa-heart"></i>
                         </button>
@@ -314,50 +299,6 @@ if (rangeSlider && maxPriceInput) {
         rangeSlider.value = maxPriceInput.value;
     });
 }
-
-// ── Auto-flipping image carousel for gig cards ──────────────
-(function () {
-    /**
-     * For each card-img-wrap that contains multiple slides, we start
-     * an auto-advance interval that crossfades to the next image every
-     * 2.8 s.  Hovering the card pauses the interval.
-     */
-    document.querySelectorAll('.card-img-wrap').forEach(function (wrap) {
-        const slides = wrap.querySelectorAll('.card-slide');
-        const dots   = wrap.querySelectorAll('.card-dot');
-        if (slides.length < 2) return;          // single image – nothing to do
-
-        let current  = 0;
-        let interval = null;
-
-        function goTo(index) {
-            slides[current].classList.remove('active');
-            dots[current] && dots[current].classList.remove('active');
-            current = (index + slides.length) % slides.length;
-            slides[current].classList.add('active');
-            dots[current] && dots[current].classList.add('active');
-        }
-
-        function start() {
-            interval = setInterval(function () {
-                goTo(current + 1);
-            }, 2800);
-        }
-
-        function stop() {
-            clearInterval(interval);
-        }
-
-        // pause on hover so users can look at the current image
-        const card = wrap.closest('.gig-card');
-        if (card) {
-            card.addEventListener('mouseenter', stop);
-            card.addEventListener('mouseleave', start);
-        }
-
-        start();
-    });
-}());
 </script>
 
 <?php include 'includes/footer.php'; ?>

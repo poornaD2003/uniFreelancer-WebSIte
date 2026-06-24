@@ -22,7 +22,47 @@ if ($stmt) { $stmt->bind_param("i",$user_id); $stmt->execute(); $res=$stmt->get_
 $recent_orders = [];
 $stmt = $conn->prepare("SELECT o.orderId,o.status,o.created_at,g.title AS gig_title,u.fullname AS client_name FROM orders o JOIN gigs g ON o.gig_id=g.id JOIN users u ON o.client_id=u.id WHERE o.student_id=? ORDER BY o.created_at DESC LIMIT 5");
 if ($stmt) { $stmt->bind_param("i",$user_id); $stmt->execute(); $res=$stmt->get_result(); while($r=$res->fetch_assoc()) $recent_orders[]=$r; $stmt->close(); }
+
+$club_name = "Independent";
+$club_contributions = 0.00;
+
+// Fetch club name
+$stmt = $conn->prepare("
+    SELECT c.club_name 
+    FROM student_profiles sp 
+    JOIN clubs c ON sp.club_id = c.id 
+    WHERE sp.user_id = ? 
+    LIMIT 1
+");
+if ($stmt) {
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $club_row = $stmt->get_result()->fetch_assoc();
+    if ($club_row) {
+        $club_name = $club_row['club_name'];
+    }
+    $stmt->close();
+}
+
+// Fetch club contributions made by this student
+$stmt = $conn->prepare("
+    SELECT SUM(cl.amount) AS total_contrib 
+    FROM club_ledger cl
+    JOIN payment p ON cl.payment_id = p.paymentId
+    WHERE p.student_id = ?
+");
+if ($stmt) {
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $contrib_row = $stmt->get_result()->fetch_assoc();
+    if (!empty($contrib_row['total_contrib'])) {
+        $club_contributions = (float)$contrib_row['total_contrib'];
+    }
+    $stmt->close();
+}
 ?>
+
+
 <div class="wrap">
     <aside class="sidebar">
         <h2>Student Hub</h2>
@@ -39,6 +79,8 @@ if ($stmt) { $stmt->bind_param("i",$user_id); $stmt->execute(); $res=$stmt->get_
             <div class="card"><strong>Rs. <?php echo number_format($earnings,2); ?></strong><div>Total Earnings</div></div>
             <div class="card"><strong><?php echo $gigs_count; ?></strong><div>Gigs Posted</div></div>
             <div class="card"><strong><?php echo $orders_count; ?></strong><div>Orders Received</div></div>
+             <div class="card"><strong><?php echo htmlspecialchars($club_name); ?></strong><div>Club Affiliation</div></div>
+            <div class="card" style="border-left: 4px solid var(--primary);"><strong>Rs. <?php echo number_format($club_contributions, 2); ?></strong><div>Club Contribution</div></div>
             <div class="card"><strong><?php echo $profile_exists ? '✓ Active' : '○ Pending'; ?></strong><div>Profile Status</div></div>
         </div>
         <div class="container" style="margin-top:1rem;">
