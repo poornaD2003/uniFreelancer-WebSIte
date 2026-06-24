@@ -259,9 +259,7 @@ $categories = [
                     <!-- Cover image -->
                     <div class="card-img-wrap">
                         <img src="<?php echo $img_path; ?>" alt="<?php echo htmlspecialchars($job['title']); ?>" class="card-cover">
-                        <button class="heart-btn" aria-label="Save to favourites">
-                            <i class="far fa-heart"></i>
-                        </button>
+                        
                     </div>
 
                     <!-- Body -->
