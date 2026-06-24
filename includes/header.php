@@ -94,7 +94,7 @@ include 'db.php';
                         <strong><?php echo htmlspecialchars($_SESSION['club_name'] ?? 'Club'); ?></strong>
                     </span>
                     <a href="club_dashboard.php" class="btn btn-outline">
-                       Dashboard
+                    Dashboard
                     </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
