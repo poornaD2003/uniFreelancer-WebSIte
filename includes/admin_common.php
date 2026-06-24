@@ -298,6 +298,24 @@ function admin_theme_styles(string $active = 'dashboard'): string
     .pill-info { background: rgba(59, 130, 246, 0.12); color: #2563eb; }
     .pill-danger { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
 
+    /* Metric cards as clickable links */
+    a.metric-link {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    a.metric-link .metric-value,
+    a.metric-link .metric-label {
+        color: inherit;
+    }
+    a.metric-link:hover {
+        transform: translateY(-5px);
+        border-color: rgba(var(--admin-primary-rgb), 0.3);
+        box-shadow: 0 16px 36px rgba(var(--admin-primary-rgb), 0.1);
+    }
+
     .table-wrap { overflow-x: auto; }
     .action-stack { display: flex; gap: 0.45rem; flex-wrap: wrap; justify-content: flex-end; }
     .anchor-spacer { scroll-margin-top: 96px; }
@@ -411,6 +429,29 @@ function admin_status_class(string $entity, string $status): string
     }
 
     return 'pill-info';
+}
+
+function admin_suspend_toggle_button(int $id, bool $is_suspended, string $entity = 'user'): string
+{
+    if ($is_suspended) {
+        $action  = 'restore';
+        $label   = '↺ Unsuspend';
+        $style   = 'background:rgba(16,185,129,0.15);color:#059669;border:1px solid rgba(16,185,129,0.35);';
+        $confirm = 'Unsuspend this ' . $entity . ' and restore access?';
+    } else {
+        $action  = 'suspend';
+        $label   = '⊘ Suspend';
+        $style   = 'background:rgba(239,68,68,0.12);color:#dc2626;border:1px solid rgba(239,68,68,0.28);';
+        $confirm = 'Suspend this ' . $entity . '? It will be blocked immediately.';
+    }
+
+    return '<form method="POST" style="display:inline-block;">'
+        . '<input type="hidden" name="id" value="' . $id . '">'
+        . '<input type="hidden" name="action" value="' . $action . '">'
+        . '<button type="submit" style="padding:0.45rem 0.9rem;font-size:0.82rem;border-radius:10px;font-weight:700;cursor:pointer;transition:all 0.2s;' . $style . '"'
+        . ' onclick="return confirm(\'' . addslashes($confirm) . '\');">'
+        . $label
+        . '</button></form>';
 }
 
 function admin_action_button(string $entity, int $id, string $action, string $label, string $variant = 'primary'): string

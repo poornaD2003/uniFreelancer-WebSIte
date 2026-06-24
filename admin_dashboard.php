@@ -42,82 +42,76 @@ if ($recent_activity_result) {
     <?php echo admin_render_nav('dashboard'); ?>
 
     <div class="metric-grid">
-        <div class="admin-panel metric-card">
+        <a href="admin_users.php" class="admin-panel metric-card metric-link">
             <div class="metric-label">Total Users</div>
             <div class="metric-value"><?php echo $stats['total_users']; ?></div>
-            <div class="metric-note"><?php echo $stats['active_users']; ?> active, <?php echo $stats['pending_users']; ?> pending, <?php echo $stats['suspended_users']; ?> suspended</div>
-        </div>
-        <div class="admin-panel metric-card">
-            <div class="metric-label">Pending Work</div>
+            <div class="metric-note">
+                <span style="color:#10b981;"><?php echo $stats['active_users']; ?> active</span> &bull;
+                <span style="color:#f97316;"><?php echo $stats['pending_users']; ?> pending</span> &bull;
+                <span style="color:#ef4444;"><?php echo $stats['suspended_users']; ?> suspended</span>
+            </div>
+        </a>
+        <a href="admin_approve.php" class="admin-panel metric-card metric-link">
+            <div class="metric-label">Pending Review</div>
             <div class="metric-value" style="color: #f97316;"><?php echo $stats['pending_users'] + $stats['pending_clubs'] + $stats['pending_gigs']; ?></div>
-            <div class="metric-note">Registrations and gigs waiting for review</div>
-        </div>
-        <div class="admin-panel metric-card">
+            <div class="metric-note">
+                <span style="color:#f97316;"><?php echo $stats['pending_users']; ?> users</span> &bull;
+                <span style="color:#f97316;"><?php echo $stats['pending_clubs']; ?> clubs</span> &bull;
+                <span style="color:#f97316;"><?php echo $stats['pending_gigs']; ?> gigs</span>
+            </div>
+        </a>
+        <a href="admin_clubs.php" class="admin-panel metric-card metric-link">
             <div class="metric-label">Clubs</div>
             <div class="metric-value"><?php echo $stats['total_clubs']; ?></div>
-            <div class="metric-note"><?php echo $stats['approved_clubs']; ?> approved, <?php echo $stats['pending_clubs']; ?> pending, <?php echo $stats['suspended_clubs']; ?> suspended</div>
-        </div>
-        <div class="admin-panel metric-card">
-            <div class="metric-label">Orders & Gigs</div>
-            <div class="metric-value"><?php echo $stats['total_orders']; ?> / <?php echo $stats['total_gigs']; ?></div>
-            <div class="metric-note"><?php echo $stats['approved_gigs']; ?> gigs approved, <?php echo $stats['pending_gigs']; ?> pending, <?php echo $stats['suspended_gigs']; ?> suspended</div>
-        </div>
+            <div class="metric-note">
+                <span style="color:#10b981;"><?php echo $stats['approved_clubs']; ?> approved</span> &bull;
+                <span style="color:#f97316;"><?php echo $stats['pending_clubs']; ?> pending</span> &bull;
+                <span style="color:#ef4444;"><?php echo $stats['suspended_clubs']; ?> suspended</span>
+            </div>
+        </a>
+        <a href="admin_gigs.php" class="admin-panel metric-card metric-link">
+            <div class="metric-label">Gigs</div>
+            <div class="metric-value"><?php echo $stats['total_gigs']; ?></div>
+            <div class="metric-note">
+                <span style="color:#10b981;"><?php echo $stats['approved_gigs']; ?> approved</span> &bull;
+                <span style="color:#f97316;"><?php echo $stats['pending_gigs']; ?> pending</span> &bull;
+                <span style="color:#ef4444;"><?php echo $stats['suspended_gigs']; ?> suspended</span>
+            </div>
+        </a>
     </div>
 
-    <div class="content-grid">
-        <div class="admin-panel section-card">
-            <div class="section-head">
-                <h2>Quick Actions</h2>
-                <a href="admin_approve.php">Open approvals</a>
-            </div>
-            <div class="quick-links">
-                <a href="admin_approve.php" class="quick-link">
-                    <span><i class="fas fa-check-circle" style="margin-right: 8px;"></i> Review Pending Registrations & Gigs</span>
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-                <a href="admin_users.php" class="quick-link">
-                    <span><i class="fas fa-users" style="margin-right: 8px;"></i> Manage User Accounts</span>
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-                <a href="admin_clubs.php" class="quick-link">
-                    <span><i class="fas fa-shield-halved" style="margin-right: 8px;"></i> Review Registered Clubs</span>
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-                <a href="admin_gigs.php" class="quick-link">
-                    <span><i class="fas fa-briefcase" style="margin-right: 8px;"></i> Moderate Active Gigs</span>
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            </div>
+    <div class="admin-panel section-card" style="margin-top: 1.5rem;">
+        <div class="section-head">
+            <h2>Recent Activity</h2>
+            <a href="admin_approve.php">Moderation queue &rarr;</a>
         </div>
-
-        <div class="admin-panel section-card">
-            <div class="section-head">
-                <h2>Recent Activity</h2>
-                <a href="admin_approve.php">Moderation queue</a>
-            </div>
-            <?php if (empty($recent_activity)): ?>
-                <div class="muted-empty">Nothing recent to show yet.</div>
-            <?php else: ?>
-                <table class="data-table">
-                    <thead>
+        <?php if (empty($recent_activity)): ?>
+            <div class="muted-empty">Nothing recent to show yet.</div>
+        <?php else: ?>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_activity as $item): ?>
                         <tr>
-                            <th>Item</th>
-                            <th>Type</th>
-                            <th>Date</th>
+                            <td style="font-weight:700;"><?php echo htmlspecialchars($item['item_name']); ?></td>
+                            <td><span class="pill <?php echo $item['item_type'] === 'user' ? 'pill-success' : ($item['item_type'] === 'club' ? 'pill-info' : 'pill-warning'); ?>"><?php echo ucfirst(htmlspecialchars($item['item_type'])); ?></span></td>
+                            <td><span class="pill <?php
+                                $s = $item['item_meta'];
+                                echo $s === 'active' || $s === 'approve' || $s === 'approved' ? 'pill-success' : ($s === 'pending' ? 'pill-warning' : 'pill-danger');
+                            ?>"><?php echo ucfirst(htmlspecialchars($s === 'inactive' ? 'Suspended' : $item['item_meta'])); ?></span></td>
+                            <td><?php echo date('M d, Y', strtotime($item['created_at'])); ?></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_activity as $item): ?>
-                            <tr>
-                                <td style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($item['item_name']); ?></td>
-                                <td><span class="pill <?php echo $item['item_type'] === 'user' ? 'pill-success' : ($item['item_type'] === 'club' ? 'pill-info' : 'pill-warning'); ?>"><?php echo htmlspecialchars($item['item_type']); ?></span></td>
-                                <td><?php echo date('M d, Y', strtotime($item['created_at'])); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
 </div>
 

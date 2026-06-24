@@ -80,20 +80,17 @@ include 'includes/header.php';
                     <?php foreach ($all_clubs as $club): ?>
                         <tr>
                             <td style="font-weight:700; color:#0f172a;"><?php echo htmlspecialchars($club['club_name']); ?></td>
-                            <td><?php echo htmlspecialchars($club['username']); ?></td>
                             <td><span class="pill"><?php echo htmlspecialchars($club['club_code']); ?></span></td>
                             <td><span class="pill <?php echo admin_status_class('club', $club['status']); ?>"><?php echo htmlspecialchars(admin_status_label('club', $club['status'])); ?></span></td>
                             <td><?php echo number_format((float)$club['contribution_rate'], 2); ?>%</td>
                             <td><?php echo date('M d, Y', strtotime($club['created_at'])); ?></td>
                             <td><div class="action-stack">
                                 <?php if ($club['status'] === 'pending'): ?>
-                                    <?php echo admin_action_button('club', (int)$club['id'], 'approve', 'Approve'); ?>
-                                    <?php echo admin_action_button('club', (int)$club['id'], 'suspend', 'Suspend', 'danger'); ?>
-                                    <?php echo admin_action_button('club', (int)$club['id'], 'reject', 'Reject', 'danger'); ?>
-                                <?php elseif ($club['status'] === 'suspended'): ?>
-                                    <?php echo admin_action_button('club', (int)$club['id'], 'restore', 'Restore'); ?>
+                                    <?php echo admin_action_button('club', (int)$club['id'], 'approve', '✓ Approve'); ?>
+                                    <?php echo admin_suspend_toggle_button((int)$club['id'], false, 'club'); ?>
+                                    <?php echo admin_action_button('club', (int)$club['id'], 'reject', '✕ Reject', 'danger'); ?>
                                 <?php else: ?>
-                                    <?php echo admin_action_button('club', (int)$club['id'], 'suspend', 'Suspend', 'danger'); ?>
+                                    <?php echo admin_suspend_toggle_button((int)$club['id'], $club['status'] === 'suspended', 'club'); ?>
                                 <?php endif; ?>
                             </div></td>
                         </tr>

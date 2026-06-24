@@ -84,12 +84,10 @@ include 'includes/header.php';
                             <td><?php echo date('M d, Y', strtotime($gig['created_at'])); ?></td>
                             <td><div class="action-stack">
                                 <?php if ($gig['status'] === 'pending'): ?>
-                                    <?php echo admin_action_button('gig', (int)$gig['id'], 'approve', 'Approve'); ?>
-                                    <?php echo admin_action_button('gig', (int)$gig['id'], 'suspend', 'Suspend', 'danger'); ?>
-                                <?php elseif ($gig['status'] === 'suspended'): ?>
-                                    <?php echo admin_action_button('gig', (int)$gig['id'], 'restore', 'Restore'); ?>
+                                    <?php echo admin_action_button('gig', (int)$gig['id'], 'approve', '✓ Approve'); ?>
+                                    <?php echo admin_suspend_toggle_button((int)$gig['id'], false, 'gig'); ?>
                                 <?php else: ?>
-                                    <?php echo admin_action_button('gig', (int)$gig['id'], 'suspend', 'Suspend', 'danger'); ?>
+                                    <?php echo admin_suspend_toggle_button((int)$gig['id'], $gig['status'] === 'suspended', 'gig'); ?>
                                 <?php endif; ?>
                             </div></td>
                         </tr>

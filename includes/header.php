@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include 'db.php'; 
+include_once __DIR__ . '/db.php'; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -43,27 +43,19 @@ include 'db.php';
                 <li><a href="jobs.php">Browse Jobs</a></li>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-<<<<<<< HEAD
                 <li><a href="student_freelancer_site.php">Home</a></li>
                 <li><a href="jobs.php">Browse Jobs</a></li>
-                 <li><a href="student-post-job.php">Post a Gig</a></li>
-                <li><a href="student-dashboard.php">Dashboard</a></li>
-            <?php else: ?>
-                <li><a href="student_freelancer_site.php">Home</a></li>
-                <li><a href="jobs.php">Browse Jobs</a></li>
-=======
                 <li><a href="student-post-job.php">Post a Gig</a></li>
                 <li><a href="student-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
                 <li><a href="club_dashboard.php">Dashboard</a></li>
-            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
-                <li><a href="admin_approve.php">Admin Panel</a></li>
->>>>>>> 279f276ba332e3bb6457b487cbcd4e98424585cc
+            <?php else: ?>
+                <li><a href="student_freelancer_site.php">Home</a></li>
+                <li><a href="jobs.php">Browse Jobs</a></li>
             <?php endif; ?>
         </ul>
         <div class="nav-actions">
-            <?php if(isset($_SESSION['user_id'])): 
-<<<<<<< HEAD
+            <?php if(isset($_SESSION['user_id'])):
                 if ($_SESSION['role'] === 'student') {
                     $profile_page = 'studentProfile.php';
                 } elseif ($_SESSION['role'] === 'client') {
@@ -71,44 +63,40 @@ include 'db.php';
                 } else {
                     $profile_page = 'adminProfile.php';
                 }
-                
+
                 if (isset($_SESSION['profile_pic']) && !empty($_SESSION['profile_pic'])) {
                     $pure_filename = basename($_SESSION['profile_pic']); 
                     $profile_pic = '/unilance/uploads/' . $pure_filename;
                 } else {
                     $profile_pic = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                 }
-=======
-                $profile_page = ($_SESSION['role'] === 'student') ? 'studentProfile.php' : 'clientProfile.php';
-                $profile_pic = isset($_SESSION['profile_pic']) ? $_SESSION['profile_pic'] : 'default.png';
+
                 $display_name = isset($_SESSION['fullname']) ? $_SESSION['fullname'] : 'User';
                 $icon_class = ($_SESSION['role'] === 'admin') ? 'fa-user-shield' : 'fa-user';
->>>>>>> 279f276ba332e3bb6457b487cbcd4e98424585cc
             ?>
                 <div class="nav-profile">
                     <span class="user-greeting">
-                        <i class="fas <?php echo $icon_class; ?>" style="color: var(--green); margin-right: 5px;"></i>
+                        <i class="fas <?php echo $icon_class; ?>" style="color: var(--green);"></i>
                         <strong><?php echo htmlspecialchars($display_name); ?></strong>
                     </span>
-                    <?php if ($_SESSION['role'] !== 'admin'): ?>
-                        <a href="<?php echo $profile_page; ?>" class="btn btn-outline">
-                           Profile
-                        </a>
-                    <?php endif; ?>
+                    <a href="<?php echo $profile_page; ?>">
+                        <img src="<?php echo htmlspecialchars($profile_pic); ?>"
+                             alt="Profile Picture"
+                             style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary, #10b981);"
+                             onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
+                    </a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
             <?php elseif(isset($_SESSION['club_id']) && $_SESSION['role'] === 'club'): ?>
                 <div class="nav-profile">
                     <span class="user-greeting">
-                        <i class="fas fa-users" style="color: var(--green); margin-right: 5px;"></i>
+                        <i class="fas fa-users" style="color: var(--green);"></i>
                         <strong><?php echo htmlspecialchars($_SESSION['club_name'] ?? 'Club'); ?></strong>
                     </span>
-                    <a href="club_dashboard.php" class="btn btn-outline">
-                       Dashboard
-                    </a>
+                    <a href="club_dashboard.php" class="btn btn-outline">Dashboard</a>
                     <a href="logout.php" class="btn btn-outline">Logout</a>
                 </div>
-            <?php else: ?>  
+            <?php else: ?>
                 <a href="login.php" class="btn btn-primary">Join Now</a>
             <?php endif; ?>
         </div>

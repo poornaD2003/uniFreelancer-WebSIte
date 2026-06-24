@@ -107,15 +107,17 @@ include 'includes/header.php';
                             <td>
                                 <div class="action-stack">
                                     <?php if ($user['role'] === 'admin'): ?>
-                                        <span class="pill pill-info">Protected</span>
+                                        <span class="pill pill-info"><i class="fas fa-shield-halved"></i> Protected</span>
                                     <?php elseif ($user['status'] === 'pending'): ?>
-                                        <?php echo admin_action_button('user', (int)$user['id'], 'approve', 'Approve'); ?>
-                                        <?php echo admin_action_button('user', (int)$user['id'], 'suspend', 'Suspend', 'danger'); ?>
-                                        <?php echo admin_action_button('user', (int)$user['id'], 'reject', 'Reject', 'danger'); ?>
-                                    <?php elseif ($user['status'] === 'inactive'): ?>
-                                        <?php echo admin_action_button('user', (int)$user['id'], 'restore', 'Restore'); ?>
+                                        <?php echo admin_action_button('user', (int)$user['id'], 'approve', '✓ Approve'); ?>
+                                        <?php echo admin_action_button('user', (int)$user['id'], 'suspend', '⊘ Suspend', 'danger'); ?>
+                                        <?php echo admin_action_button('user', (int)$user['id'], 'reject', '✕ Reject', 'danger'); ?>
                                     <?php else: ?>
-                                        <?php echo admin_action_button('user', (int)$user['id'], 'suspend', 'Suspend', 'danger'); ?>
+                                        <?php if ($user['status'] === 'inactive'): ?>
+                                            <?php echo admin_suspend_toggle_button((int)$user['id'], true); ?>
+                                        <?php else: ?>
+                                            <?php echo admin_suspend_toggle_button((int)$user['id'], false); ?>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
