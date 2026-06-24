@@ -38,7 +38,10 @@ include 'db.php';
         <ul class="nav-links">
             <li><a href="student_freelancer_site.php">Home</a></li>
             <li><a href="jobs.php">Browse Jobs</a></li>
-            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
+            <?php if(isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin'): ?>
+                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+                <li><a href="admin_approve.php">Approvals</a></li>
+            <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'client'): ?>
                 <li><a href="client-dashboard.php">Dashboard</a></li>
             <?php elseif(isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
                 <li><a href="student-post-job.php">Post a Gig</a></li>
