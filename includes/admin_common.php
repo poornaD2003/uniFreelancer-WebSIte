@@ -399,7 +399,7 @@ function admin_status_label(string $entity, string $status): string
         return 'Approved';
     }
 
-    if ($entity === 'user' && $status === 'inactive') {
+    if ($entity === 'user' && $status === 'suspend') {
         return 'Suspended';
     }
 
@@ -416,7 +416,7 @@ function admin_status_class(string $entity, string $status): string
         return 'pill-warning';
     }
 
-    if ($entity === 'user' && $status === 'inactive') {
+    if ($entity === 'user' && $status === 'suspend') {
         return 'pill-danger';
     }
 

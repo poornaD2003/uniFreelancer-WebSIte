@@ -20,7 +20,7 @@ $stats = [
 
 $recent_activity = [];
 $recent_activity_result = $conn->query(
-    "SELECT 'user' AS item_type, fullname AS item_name, status AS item_meta, created_at FROM users
+    "SELECT role AS item_type, fullname AS item_name, status AS item_meta, created_at FROM users
      UNION ALL
      SELECT 'club' AS item_type, club_name AS item_name, status AS item_meta, created_at FROM clubs
      UNION ALL
@@ -46,36 +46,36 @@ if ($recent_activity_result) {
             <div class="metric-label">Total Users</div>
             <div class="metric-value"><?php echo $stats['total_users']; ?></div>
             <div class="metric-note">
-                <span style="color:#10b981;"><?php echo $stats['active_users']; ?> active</span> &bull;
-                <span style="color:#f97316;"><?php echo $stats['pending_users']; ?> pending</span> &bull;
-                <span style="color:#ef4444;"><?php echo $stats['suspended_users']; ?> suspended</span>
+                <div style="color:#10b981;"><?php echo $stats['active_users']; ?> active</div>
+                <div style="color:#f97316;"><?php echo $stats['pending_users']; ?> pending</div>
+                <div style="color:#ef4444;"><?php echo $stats['suspended_users']; ?> suspended</div>
             </div>
         </a>
         <a href="admin_approve.php" class="admin-panel metric-card metric-link">
             <div class="metric-label">Pending Review</div>
             <div class="metric-value" style="color: #f97316;"><?php echo $stats['pending_users'] + $stats['pending_clubs'] + $stats['pending_gigs']; ?></div>
             <div class="metric-note">
-                <span style="color:#f97316;"><?php echo $stats['pending_users']; ?> users</span> &bull;
-                <span style="color:#f97316;"><?php echo $stats['pending_clubs']; ?> clubs</span> &bull;
-                <span style="color:#f97316;"><?php echo $stats['pending_gigs']; ?> gigs</span>
+                <div style="color:#f97316;"><?php echo $stats['pending_users']; ?> users</div>
+                <div style="color:#f97316;"><?php echo $stats['pending_clubs']; ?> clubs</div>
+                <div style="color:#f97316;"><?php echo $stats['pending_gigs']; ?> gigs</div>
             </div>
         </a>
         <a href="admin_clubs.php" class="admin-panel metric-card metric-link">
             <div class="metric-label">Clubs</div>
             <div class="metric-value"><?php echo $stats['total_clubs']; ?></div>
             <div class="metric-note">
-                <span style="color:#10b981;"><?php echo $stats['approved_clubs']; ?> approved</span> &bull;
-                <span style="color:#f97316;"><?php echo $stats['pending_clubs']; ?> pending</span> &bull;
-                <span style="color:#ef4444;"><?php echo $stats['suspended_clubs']; ?> suspended</span>
+                <div style="color:#10b981;"><?php echo $stats['approved_clubs']; ?> approved</div>
+                <div style="color:#f97316;"><?php echo $stats['pending_clubs']; ?> pending</div>
+                <div style="color:#ef4444;"><?php echo $stats['suspended_clubs']; ?> suspended</div>
             </div>
         </a>
         <a href="admin_gigs.php" class="admin-panel metric-card metric-link">
             <div class="metric-label">Gigs</div>
             <div class="metric-value"><?php echo $stats['total_gigs']; ?></div>
             <div class="metric-note">
-                <span style="color:#10b981;"><?php echo $stats['approved_gigs']; ?> approved</span> &bull;
-                <span style="color:#f97316;"><?php echo $stats['pending_gigs']; ?> pending</span> &bull;
-                <span style="color:#ef4444;"><?php echo $stats['suspended_gigs']; ?> suspended</span>
+                <div style="color:#10b981;"><?php echo $stats['approved_gigs']; ?> approved</div>
+                <div style="color:#f97316;"><?php echo $stats['pending_gigs']; ?> pending</div>
+                <div style="color:#ef4444;"><?php echo $stats['suspended_gigs']; ?> suspended</div>
             </div>
         </a>
     </div>
@@ -83,7 +83,6 @@ if ($recent_activity_result) {
     <div class="admin-panel section-card" style="margin-top: 1.5rem;">
         <div class="section-head">
             <h2>Recent Activity</h2>
-            <a href="admin_approve.php">Moderation queue &rarr;</a>
         </div>
         <?php if (empty($recent_activity)): ?>
             <div class="muted-empty">Nothing recent to show yet.</div>
@@ -92,7 +91,7 @@ if ($recent_activity_result) {
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Type</th>
+                        <th>Role</th>
                         <th>Status</th>
                         <th>Date</th>
                     </tr>
@@ -101,7 +100,7 @@ if ($recent_activity_result) {
                     <?php foreach ($recent_activity as $item): ?>
                         <tr>
                             <td style="font-weight:700;"><?php echo htmlspecialchars($item['item_name']); ?></td>
-                            <td><span class="pill <?php echo $item['item_type'] === 'user' ? 'pill-success' : ($item['item_type'] === 'club' ? 'pill-info' : 'pill-warning'); ?>"><?php echo ucfirst(htmlspecialchars($item['item_type'])); ?></span></td>
+                            <td><span class="pill <?php echo in_array($item['item_type'], ['admin', 'student', 'client']) ? 'pill-info' : ($item['item_type'] === 'club' ? 'pill-success' : 'pill-warning'); ?>"><?php echo ucfirst(htmlspecialchars($item['item_type'])); ?></span></td>
                             <td><span class="pill <?php
                                 $s = $item['item_meta'];
                                 echo $s === 'active' || $s === 'approve' || $s === 'approved' ? 'pill-success' : ($s === 'pending' ? 'pill-warning' : 'pill-danger');

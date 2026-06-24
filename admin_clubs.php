@@ -26,8 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id'
     admin_flash_and_redirect('error', $message, 'admin_clubs.php');
 }
 
-$all_clubs_result = $conn->query("SELECT id, club_name, club_code, status, contribution_rate, created_at FROM clubs ORDER BY created_at DESC");
-$all_clubs = $all_clubs_result ? $all_clubs_result->fetch_all(MYSQLI_ASSOC) : [];
+$search = trim($_GET['search'] ?? '');
+if ($search !== '') {
+    $stmt = $conn->prepare("SELECT id, club_name, club_code, status, contribution_rate, created_at FROM clubs WHERE club_name LIKE ? ORDER BY created_at DESC");
+    $like = '%' . $search . '%';
+    $stmt->bind_param('s', $like);
+    $stmt->execute();
+    $all_clubs_result = $stmt->get_result();
+    $all_clubs = $all_clubs_result ? $all_clubs_result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+} else {
+    $all_clubs_result = $conn->query("SELECT id, club_name, club_code, status, contribution_rate, created_at FROM clubs ORDER BY created_at DESC");
+    $all_clubs = $all_clubs_result ? $all_clubs_result->fetch_all(MYSQLI_ASSOC) : [];
+}
 
 $stats = [
     'total' => count($all_clubs),
@@ -66,8 +77,15 @@ include 'includes/header.php';
     </div>
 
     <div class="section-card admin-panel">
-        <div class="section-head">
+        <div class="section-head" style="flex-wrap: wrap;">
             <h2>All Clubs</h2>
+            <form method="GET" style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="text" name="search" placeholder="Search club..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 1rem;">Search</button>
+                <?php if (!empty($_GET['search'])): ?>
+                    <a href="admin_clubs.php" class="btn" style="padding: 0.4rem 1rem; text-decoration: none; border: 1px solid #cbd5e1; color: #334155; border-radius: 8px;">Clear</a>
+                <?php endif; ?>
+            </form>
             <a href="admin_approve.php">Pending queue</a>
         </div>
         <?php if (empty($all_clubs)): ?>

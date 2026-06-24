@@ -11,9 +11,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id'
     if ($action === 'approve' || $action === 'restore') {
         $ok = admin_post_query($conn, 'UPDATE gigs SET status = ? WHERE id = ?', 'si', ['approve', $id]);
         $message = 'Gig restored successfully.';
-    } elseif ($action === 'suspend') {
-        $ok = admin_post_query($conn, 'UPDATE gigs SET status = ? WHERE id = ?', 'si', ['suspended', $id]);
-        $message = 'Gig suspended successfully.';
     }
 
     if ($ok) {
@@ -23,14 +20,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id'
     admin_flash_and_redirect('error', $message, 'admin_gigs.php');
 }
 
-$all_gigs_result = $conn->query("SELECT g.id, g.title, g.category, g.price, g.status, g.created_at, u.fullname AS student_name FROM gigs g JOIN users u ON g.student_id = u.id ORDER BY g.created_at DESC");
-$all_gigs = $all_gigs_result ? $all_gigs_result->fetch_all(MYSQLI_ASSOC) : [];
+$search = trim($_GET['search'] ?? '');
+if ($search !== '') {
+    $stmt = $conn->prepare("SELECT g.id, g.title, g.category, g.price, g.status, g.created_at, u.fullname AS student_name FROM gigs g JOIN users u ON g.student_id = u.id WHERE g.title LIKE ? ORDER BY g.created_at DESC");
+    $like = '%' . $search . '%';
+    $stmt->bind_param('s', $like);
+    $stmt->execute();
+    $all_gigs_result = $stmt->get_result();
+    $all_gigs = $all_gigs_result ? $all_gigs_result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+} else {
+    $all_gigs_result = $conn->query("SELECT g.id, g.title, g.category, g.price, g.status, g.created_at, u.fullname AS student_name FROM gigs g JOIN users u ON g.student_id = u.id ORDER BY g.created_at DESC");
+    $all_gigs = $all_gigs_result ? $all_gigs_result->fetch_all(MYSQLI_ASSOC) : [];
+}
 
 $stats = [
     'total' => count($all_gigs),
     'pending' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM gigs WHERE status = 'pending'"),
     'approved' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM gigs WHERE status = 'approve'"),
-    'suspended' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM gigs WHERE status = 'suspended'"),
 ];
 
 $flash = $_SESSION['admin_flash'] ?? null;
@@ -59,12 +66,18 @@ include 'includes/header.php';
         <div class="admin-panel metric-card"><div class="metric-label">Total Gigs</div><div class="metric-value"><?php echo $stats['total']; ?></div><div class="metric-note">All posted gigs</div></div>
         <div class="admin-panel metric-card"><div class="metric-label">Approved</div><div class="metric-value" style="color: #10b981;"><?php echo $stats['approved']; ?></div><div class="metric-note">Visible on the platform</div></div>
         <div class="admin-panel metric-card"><div class="metric-label">Pending</div><div class="metric-value" style="color: #f97316;"><?php echo $stats['pending']; ?></div><div class="metric-note">Waiting for review</div></div>
-        <div class="admin-panel metric-card"><div class="metric-label">Suspended</div><div class="metric-value" style="color: #ef4444;"><?php echo $stats['suspended']; ?></div><div class="metric-note">Hidden from clients</div></div>
     </div>
 
     <div class="section-card admin-panel">
-        <div class="section-head">
+        <div class="section-head" style="flex-wrap: wrap;">
             <h2>All Gigs</h2>
+            <form method="GET" style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="text" name="search" placeholder="Search gig..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 1rem;">Search</button>
+                <?php if (!empty($_GET['search'])): ?>
+                    <a href="admin_gigs.php" class="btn" style="padding: 0.4rem 1rem; text-decoration: none; border: 1px solid #cbd5e1; color: #334155; border-radius: 8px;">Clear</a>
+                <?php endif; ?>
+            </form>
             <a href="admin_approve.php">Pending queue</a>
         </div>
         <?php if (empty($all_gigs)): ?>
@@ -85,9 +98,6 @@ include 'includes/header.php';
                             <td><div class="action-stack">
                                 <?php if ($gig['status'] === 'pending'): ?>
                                     <?php echo admin_action_button('gig', (int)$gig['id'], 'approve', '✓ Approve'); ?>
-                                    <?php echo admin_suspend_toggle_button((int)$gig['id'], false, 'gig'); ?>
-                                <?php else: ?>
-                                    <?php echo admin_suspend_toggle_button((int)$gig['id'], $gig['status'] === 'suspended', 'gig'); ?>
                                 <?php endif; ?>
                             </div></td>
                         </tr>

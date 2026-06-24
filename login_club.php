@@ -4,8 +4,6 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 include 'includes/db.php';
-include 'includes/header.php';
-
 $error = "";
 $username = "";
 
@@ -26,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_club'])) {
                     $error = "🔒 Your club account is pending administrator approval. Please wait until verification completes.";
                 } elseif ($club['status'] === 'rejected') {
                     $error = "🚫 Your club account request has been rejected by an administrator.";
+                } elseif ($club['status'] === 'suspended' || $club['status'] === 'inactive') {
+                    $error = "🚫 Your club account has been suspended by an administrator.";
                 } else {
                     // Approved: Initialize session variables
                     $_SESSION['club_id'] = $club['id'];
@@ -46,6 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_club'])) {
         $error = "Something went wrong. Please try again later.";
     }
 }
+
+include 'includes/header.php';
 ?>
 
 <div class="form-container card fade-in" style="max-width: 500px; margin: 120px auto 40px; padding: 2.5rem;">

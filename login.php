@@ -4,15 +4,13 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 include 'includes/db.php';
-include 'includes/header.php';
-
 $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $query = "SELECT id, fullname, password, role, profile_pic,status FROM users WHERE email = ?";
+    $query = "SELECT id, fullname, password, role, profile_pic, status FROM users WHERE email = ?";
     
     if ($stmt = mysqli_prepare($conn, $query)) {
         mysqli_stmt_bind_param($stmt, "s", $email);
@@ -25,26 +23,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             
             if (password_verify($password, $user['password'])) {
 
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['fullname'] = $user['fullname'];
-                $_SESSION['role'] = $user['role'];
-                $_SESSION['profile_pic'] = $user['profile_pic'];
-                
-                if ($user['role'] === 'admin') {
-                    header("Location: admin_dashboard.php");
-                    exit();
-                }
-                
                 if ($user['status'] === 'pending') {
                     $error = "🔒 Your account is pending administrator approval. Please wait until evaluation completes.";
-                    unset($_SESSION['user_id']);
-                    session_destroy();
-                } elseif ($user['status'] === 'inactive') {
+                } elseif ($user['status'] === 'suspend') {
                     $error = "🚫 Your account has been suspended by an administrator.";
-                    session_destroy();
                 } else {
-                    header("Location: student_freelancer_site.php");
-                    exit();
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['fullname'] = $user['fullname'];
+                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['profile_pic'] = $user['profile_pic'];
+                    
+                    if ($user['role'] === 'admin') {
+                        header("Location: admin_dashboard.php");
+                        exit();
+                    } else {
+                        header("Location: student_freelancer_site.php");
+                        exit();
+                    }
                 }
                 
             } else {
@@ -59,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         $error = "Something went wrong. Please try again later.";
     }
 }
+
+include 'includes/header.php';
 ?>
 
 <div class="form-container card fade-in">

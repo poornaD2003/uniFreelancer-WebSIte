@@ -12,17 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id'
         $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['active', $id]);
         $message = 'User restored successfully.';
     } elseif ($action === 'suspend') {
-        $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['inactive', $id]);
+        $ok = admin_post_query($conn, 'UPDATE users SET status = ? WHERE id = ?', 'si', ['suspend', $id]);
         $message = 'User suspended successfully.';
     } elseif ($action === 'reject') {
         $ok = admin_post_query($conn, 'DELETE FROM users WHERE id = ?', 'i', [$id]);
         $message = 'User removed successfully.';
-    } elseif ($action === 'change_role' && isset($_POST['new_role'])) {
-        $new_role = (string)$_POST['new_role'];
-        if (in_array($new_role, ['student', 'client', 'admin'])) {
-            $ok = admin_post_query($conn, 'UPDATE users SET role = ? WHERE id = ?', 'si', [$new_role, $id]);
-            $message = 'User role updated successfully.';
-        }
     }
 
     if ($ok) {
@@ -32,14 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id'
     admin_flash_and_redirect('error', $message, 'admin_users.php');
 }
 
-$all_users_result = $conn->query("SELECT id, fullname, email, role, status, created_at FROM users ORDER BY created_at DESC");
-$all_users = $all_users_result ? $all_users_result->fetch_all(MYSQLI_ASSOC) : [];
+$search = trim($_GET['search'] ?? '');
+if ($search !== '') {
+    $stmt = $conn->prepare("SELECT id, fullname, email, role, status, created_at FROM users WHERE fullname LIKE ? ORDER BY created_at DESC");
+    $like = '%' . $search . '%';
+    $stmt->bind_param('s', $like);
+    $stmt->execute();
+    $all_users_result = $stmt->get_result();
+    $all_users = $all_users_result ? $all_users_result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+} else {
+    $all_users_result = $conn->query("SELECT id, fullname, email, role, status, created_at FROM users ORDER BY created_at DESC");
+    $all_users = $all_users_result ? $all_users_result->fetch_all(MYSQLI_ASSOC) : [];
+}
 
 $stats = [
     'total' => count($all_users),
     'active' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'active'"),
     'pending' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'pending'"),
-    'suspended' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'inactive'"),
+    'suspended' => admin_count_query($conn, "SELECT COUNT(*) AS total FROM users WHERE status = 'suspend'"),
 ];
 
 $flash = $_SESSION['admin_flash'] ?? null;
@@ -72,8 +77,15 @@ include 'includes/header.php';
     </div>
 
     <div class="section-card admin-panel">
-        <div class="section-head">
+        <div class="section-head" style="flex-wrap: wrap;">
             <h2>All Users</h2>
+            <form method="GET" style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="text" name="search" placeholder="Search by name..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 1rem;">Search</button>
+                <?php if (!empty($_GET['search'])): ?>
+                    <a href="admin_users.php" class="btn" style="padding: 0.4rem 1rem; text-decoration: none; border: 1px solid #cbd5e1; color: #334155; border-radius: 8px;">Clear</a>
+                <?php endif; ?>
+            </form>
             <a href="admin_approve.php">Pending queue</a>
         </div>
         <?php if (empty($all_users)): ?>
@@ -91,15 +103,7 @@ include 'includes/header.php';
                                 <?php if ((int)$user['id'] === (int)$_SESSION['user_id']): ?>
                                     <span class="pill pill-info" style="font-weight: 800; background: rgba(59, 130, 246, 0.12); color: #2563eb;"><i class="fas fa-user-shield"></i> Admin (You)</span>
                                 <?php else: ?>
-                                    <form method="POST" style="display:inline-block; margin: 0;">
-                                        <input type="hidden" name="id" value="<?php echo (int)$user['id']; ?>">
-                                        <input type="hidden" name="action" value="change_role">
-                                        <select name="new_role" onchange="if(confirm('Are you sure you want to change this user\'s role to ' + this.value.toUpperCase() + '?')) this.form.submit();" class="pill" style="border: 1px solid rgba(226, 232, 240, 1); padding: 0.25rem 0.5rem; font-weight: 700; cursor: pointer; background: #ffffff; color: #334155; text-transform: uppercase;">
-                                            <option value="student" <?php echo $user['role'] === 'student' ? 'selected' : ''; ?>>Student</option>
-                                            <option value="client" <?php echo $user['role'] === 'client' ? 'selected' : ''; ?>>Client</option>
-                                            <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
-                                        </select>
-                                    </form>
+                                    <span class="pill" style="border: 1px solid rgba(226, 232, 240, 1); background: #ffffff; color: #334155;"><?php echo ucfirst(htmlspecialchars($user['role'])); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td><span class="pill <?php echo admin_status_class('user', $user['status']); ?>"><?php echo htmlspecialchars(admin_status_label('user', $user['status'])); ?></span></td>
@@ -113,7 +117,7 @@ include 'includes/header.php';
                                         <?php echo admin_action_button('user', (int)$user['id'], 'suspend', '⊘ Suspend', 'danger'); ?>
                                         <?php echo admin_action_button('user', (int)$user['id'], 'reject', '✕ Reject', 'danger'); ?>
                                     <?php else: ?>
-                                        <?php if ($user['status'] === 'inactive'): ?>
+                                        <?php if ($user['status'] === 'suspend'): ?>
                                             <?php echo admin_suspend_toggle_button((int)$user['id'], true); ?>
                                         <?php else: ?>
                                             <?php echo admin_suspend_toggle_button((int)$user['id'], false); ?>

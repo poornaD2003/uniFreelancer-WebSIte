@@ -70,18 +70,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (isset($_POST['update_profile'])) {
         $fullname = trim($_POST['fullname']);
+        $email = trim($_POST['email']);
         $uni_name = $_POST['university_name'] ?? '';
         $faculty = $_POST['faculty'] ?? '';
         $dept = $_POST['department'] ?? '';
         $clubs = trim($_POST['club_affiliations']);
 
-        $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
-        $stmt1->bind_param("si", $fullname, $user_id);
-        $stmt1->execute();
-        $stmt1->close();
-        
-        // Header එකේ fullname එකත් update වීමට
-        $_SESSION['fullname'] = $fullname;
+        $club_update_success = true;
+
+        // Check if email already exists
+        $stmtCheck = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+        $stmtCheck->bind_param("si", $email, $user_id);
+        $stmtCheck->execute();
+        $stmtCheck->store_result();
+        if ($stmtCheck->num_rows > 0) {
+            $error_msg = "This email is already in use by another user.";
+            $club_update_success = false;
+        }
+        $stmtCheck->close();
+
+        if ($club_update_success) {
+            $stmt1 = $conn->prepare("UPDATE users SET fullname = ?, email = ? WHERE id = ?");
+            $stmt1->bind_param("ssi", $fullname, $email, $user_id);
+            $stmt1->execute();
+            $stmt1->close();
+            
+            // Header එකේ fullname එකත් update වීමට
+            $_SESSION['fullname'] = $fullname;
+
 
         $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations) 
                                 VALUES (?, ?, ?, ?, ?) 
@@ -140,8 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($club_update_success) {
-            $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
-            $stmt1->bind_param("si", $fullname, $user_id);
+            $stmt1 = $conn->prepare("UPDATE users SET fullname = ?, email = ? WHERE id = ?");
+            $stmt1->bind_param("ssi", $fullname, $email, $user_id);
             $stmt1->execute();
             $stmt1->close();
 
@@ -297,6 +313,11 @@ if (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== 'default.
         <div class="input-group">
             <label>Full Name</label>
             <input type="text" name="fullname" value="<?php echo htmlspecialchars($user_data['fullname'] ?? ''); ?>" required>
+        </div>
+        
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" name="email" value="<?php echo htmlspecialchars($user_data['email'] ?? ''); ?>" required>
         </div>
         
         <div class="input-group">

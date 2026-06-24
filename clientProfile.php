@@ -19,26 +19,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (isset($_POST['update_client'])) {
         $fullname = trim($_POST['fullname']);
+        $email = trim($_POST['email']);
         $b_name = trim($_POST['business_name']);
         $b_address = trim($_POST['business_address']);
         $b_type = trim($_POST['business_type']);
         $b_phone = trim($_POST['business_phone']);
         $b_website = trim($_POST['business_website']);
 
-        $stmt1 = $conn->prepare("UPDATE users SET fullname = ? WHERE id = ?");
-        $stmt1->bind_param("si", $fullname, $user_id);
-        $stmt1->execute();
-        $stmt1->close();
+        $update_ok = true;
+
+        $stmtCheck = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+        $stmtCheck->bind_param("si", $email, $user_id);
+        $stmtCheck->execute();
+        $stmtCheck->store_result();
+        if ($stmtCheck->num_rows > 0) {
+            $error_msg = "This email is already in use by another user.";
+            $update_ok = false;
+        }
+        $stmtCheck->close();
+
+        if ($update_ok) {
+            $stmt1 = $conn->prepare("UPDATE users SET fullname = ?, email = ? WHERE id = ?");
+            $stmt1->bind_param("ssi", $fullname, $email, $user_id);
+            $stmt1->execute();
+            $stmt1->close();
         
         $stmt2 = $conn->prepare("INSERT INTO client_profiles (user_id, business_name, business_address, business_type, business_phone, business_website) 
                                 VALUES (?, ?, ?, ?, ?, ?) 
                                 ON DUPLICATE KEY UPDATE business_name = ?, business_address = ?, business_type = ?, business_phone = ?, business_website = ?");
         
-        $stmt2->bind_param("issssssssss", $user_id, $b_name, $b_address, $b_type, $b_phone, $b_website, $b_name, $b_address, $b_type, $b_phone, $b_website);
-        $stmt2->execute();
-        $stmt2->close();
-        
-        $msg = "Business profile updated successfully!";
+            $stmt2->bind_param("issssssssss", $user_id, $b_name, $b_address, $b_type, $b_phone, $b_website, $b_name, $b_address, $b_type, $b_phone, $b_website);
+            $stmt2->execute();
+            $stmt2->close();
+            
+            $msg = "Business profile updated successfully!";
+        }
     }
 
     if (isset($_POST['change_password'])) {
@@ -103,6 +118,11 @@ if (!$profile_data) {
         <div class="input-group">
             <label>Contact Person Name</label>
             <input type="text" name="fullname" value="<?php echo htmlspecialchars($user_data['fullname'] ?? ''); ?>" required>
+        </div>
+
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" name="email" value="<?php echo htmlspecialchars($user_data['email'] ?? ''); ?>" required>
         </div>
         
         <div class="input-group">
