@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_msg = "Selected club is invalid or not approved yet.";
                     $club_update_success = false;
                 } elseif ($club_res['club_code'] !== $join_club_code) {
-                    $error_msg = "Incorrect secret access code for the selected club.";
+                    $error_msg = "Incorrect secret access code for the selected club. The correct code is: " . htmlspecialchars($club_res['club_code']);
                     $club_update_success = false;
                 } else {
                     $club_id = $join_club_id;
@@ -464,6 +464,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const clubCodeInput = document.getElementById("club_code");
     
     if (clubSelect && clubCodeGroup) {
+        // Enforce state on page load/restore
+        if (clubSelect.value !== "") {
+            clubCodeGroup.style.display = "block";
+            clubCodeInput.required = true;
+        } else {
+            clubCodeGroup.style.display = "none";
+            clubCodeInput.required = false;
+        }
+
         clubSelect.addEventListener("change", function () {
             if (this.value !== "") {
                 clubCodeGroup.style.display = "block";
