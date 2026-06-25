@@ -85,11 +85,10 @@ $categories = [
 
 <!-- ── CATEGORY HERO BANNER ──────────────────────────────── -->
 <div class="cat-hero">
-    <div class="hero-blob-yellow"></div>
-    <div class="hero-blob-coral"></div>
+    
     <div class="hero-text">
         <div class="hero-breadcrumb">
-            <a href="index.php">Home</a>
+            <a href="student_freelancer_site.php">Home</a>
             <span>/</span>
             <a href="jobs.php">Services</a>
             <?php if (!empty($category_filter)): ?>

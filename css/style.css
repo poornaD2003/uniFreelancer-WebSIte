@@ -315,7 +315,7 @@ nav.nav-scrolled {
 
 .hero h1 em {
     font-style: normal;
-    background: linear-gradient(135deg, var(--green) 20%, var(--blue-light) 100%);
+    background: linear-gradient(135deg, var(--green) 20%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
