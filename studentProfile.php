@@ -30,10 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (in_array($fileExt, $allowedExtensions)) {
                 if ($fileSize < 5000000) { // Max 5MB
-                    // Unique නමක් සෑදීම (පරණ duplicate path ප්‍රශ්න මඟහරවා ගැනීමට)
                     $newFileName = "profile_" . $user_id . "_" . time() . "." . $fileExt;
                     
-                    // Upload වන Folder එක නිවැරදිව තැබීම
                     $uploadDirectory = 'uploads/';
                     if (!is_dir($uploadDirectory)) {
                         mkdir($uploadDirectory, 0777, true);
@@ -42,12 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $fileDestination = $uploadDirectory . $newFileName;
 
                     if (move_uploaded_file($fileTmpName, $fileDestination)) {
-                        // Database එකේ save කරන්නේ පිරිසිදු file name එක පමණි
                         $stmtImg = $conn->prepare("UPDATE users SET profile_pic = ? WHERE id = ?");
                         $stmtImg->bind_param("si", $newFileName, $user_id);
                         
                         if ($stmtImg->execute()) {
-                            // 💡 වැදගත්ම කොටස: Header එකට ක්ෂණිකව පෙනීමට Session එක Update කිරීම
                             $_SESSION['profile_pic'] = $newFileName;
                             $msg = "Profile picture updated successfully!";
                         } else {
@@ -80,7 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt1->execute();
         $stmt1->close();
         
-        // Header එකේ fullname එකත් update වීමට
         $_SESSION['fullname'] = $fullname;
 
         $stmt2 = $conn->prepare("INSERT INTO student_profiles (user_id, university_name, faculty, department, club_affiliations) 

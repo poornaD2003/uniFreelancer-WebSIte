@@ -94,14 +94,7 @@ $steps = [
     <button type="submit" class="btn btn-primary">Search</button>
   </form>
   
-  <div class="search-tags">
-    <span>Popular:</span>
-    <a href="jobs.php?search=React" class="search-tag" style="text-decoration:none;">React</a>
-    <a href="jobs.php?search=Logo Design" class="search-tag" style="text-decoration:none;">Logo Design</a>
-    <a href="jobs.php?search=WordPress" class="search-tag" style="text-decoration:none;">WordPress</a>
-    <a href="jobs.php?search=Python" class="search-tag" style="text-decoration:none;">Python</a>
-    <a href="jobs.php?search=SEO" class="search-tag" style="text-decoration:none;">SEO Writing</a>
-  </div>
+  
 </div>
 
 <section class="section how-section" >
